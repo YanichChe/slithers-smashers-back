@@ -3,9 +3,6 @@
 
 package ru.ccfit.nsu.chernovskaya.slitherssmashersback;
 
-import org.springframework.stereotype.Component;
-
-@Component
 public final class SnakesProto {
   private SnakesProto() {}
   public static void registerAllExtensions(
