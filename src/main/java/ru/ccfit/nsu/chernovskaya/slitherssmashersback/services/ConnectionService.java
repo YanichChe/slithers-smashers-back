@@ -14,18 +14,18 @@ import java.util.UUID;
 public class ConnectionService {
 
     private final GameInfo gameInfo;
-    private int id;
-
+    private int id = 0;
     @Autowired
     public ConnectionService(GameInfo gameInfo) {
         this.gameInfo = gameInfo;
     }
 
-    public void generateUniqueId() {
-        id = Integer.parseInt(UUID.randomUUID().toString());
+    synchronized private int generateUniqueId() {
+        return (id++);
     }
 
-    public void createNewGamePlayer(String username, String ipAddress, int port, SnakesProto.NodeRole nodeRole) {
+    public int createNewGamePlayer(String username, String ipAddress, int port, SnakesProto.NodeRole nodeRole) {
+        int id = generateUniqueId();
         SnakesProto.GamePlayer gamePlayer = SnakesProto.GamePlayer
                 .newBuilder()
                 .setName(username)
@@ -37,9 +37,10 @@ public class ConnectionService {
                 .build();
         gameInfo.getGamePlayers().add(gamePlayer);
         log.info("New player " + gamePlayer.toString());
+        return id;
     }
 
-    public void createNewSnake(SnakesProto.GameState.Coord[] coords) {
+    public void createNewSnake(SnakesProto.GameState.Coord[] coords, int id) {
         SnakesProto.GameState.Snake snake = SnakesProto.GameState.Snake
                 .newBuilder()
                 .setState(SnakesProto.GameState.Snake.SnakeState.ALIVE)
