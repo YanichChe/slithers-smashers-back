@@ -24,11 +24,8 @@ public class GameInfo {
 
     private int msqSeq = -1;
 
-    public int getIncrementMsgSeq() {
-        synchronized (monitor) {
-            msqSeq++;
-        }
-
+     public synchronized int getIncrementMsgSeq() {
+        msqSeq++;
         return msqSeq;
     }
 }
