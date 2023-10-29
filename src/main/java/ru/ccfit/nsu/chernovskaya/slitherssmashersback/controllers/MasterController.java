@@ -21,7 +21,7 @@ public class MasterController {
         this.connectionService = connectionService;
     }
 
-    @GetMapping("/start")
+    @PostMapping("/start")
     public void startNewGame(@RequestParam int height,
                              @RequestParam int width,
                              @RequestParam int foodStatic,
