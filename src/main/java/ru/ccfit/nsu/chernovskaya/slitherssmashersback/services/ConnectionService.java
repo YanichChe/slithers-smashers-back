@@ -1,6 +1,7 @@
 package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services;
 
 import com.google.protobuf.ByteString;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
@@ -9,6 +10,7 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import java.util.UUID;
 
 @Service
+@Log4j2
 public class ConnectionService {
 
     private final GameInfo gameInfo;
@@ -19,11 +21,11 @@ public class ConnectionService {
         this.gameInfo = gameInfo;
     }
 
-    public void generateUniqueId(){
+    public void generateUniqueId() {
         id = Integer.parseInt(UUID.randomUUID().toString());
     }
 
-    public void createNewGamePlayer(String username, String ipAddress, int port) {
+    public void createNewGamePlayer(String username, String ipAddress, int port, SnakesProto.NodeRole nodeRole) {
         SnakesProto.GamePlayer gamePlayer = SnakesProto.GamePlayer
                 .newBuilder()
                 .setName(username)
@@ -31,8 +33,10 @@ public class ConnectionService {
                 .setPort(port)
                 .setScore(0)
                 .setId(id)
+                .setRole(nodeRole)
                 .build();
-        gameInfo.getGamePlayers().getPlayersList().add(gamePlayer);
+        gameInfo.getGamePlayers().add(gamePlayer);
+        log.info("New player " + gamePlayer.toString());
     }
 
     public void createNewSnake(SnakesProto.GameState.Coord[] coords) {
@@ -40,10 +44,13 @@ public class ConnectionService {
                 .newBuilder()
                 .setState(SnakesProto.GameState.Snake.SnakeState.ALIVE)
                 .setPlayerId(id)
-                .setPoints(0, coords[0])
-                .setPoints(1, coords[1])
+                .addPoints(coords[0])
+                .addPoints(coords[1])
                 .setHeadDirection(SnakesProto.Direction.RIGHT)
                 .build();
+
+        gameInfo.getSnakes().add(snake);
+        log.info("New snake " + snake.toString());
     }
 
     public SnakesProto.GameState.Coord[] searchPlace() {
