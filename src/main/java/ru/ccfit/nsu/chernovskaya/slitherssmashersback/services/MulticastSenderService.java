@@ -19,9 +19,10 @@ public class MulticastSenderService implements Runnable {
 
     private final GameInfo gameInfo;
     @Value("${multicast.sender.address}")
-    int groupPort;
-    @Value("${multicast.sender.port}")
     String groupAddress;
+
+    @Value("${multicast.sender.port}")
+    int groupPort;
 
     @Autowired
     public MulticastSenderService(GameInfo gameInfo) {
