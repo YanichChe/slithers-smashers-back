@@ -27,7 +27,9 @@ public class MasterController {
                              @RequestParam int foodStatic,
                              @RequestParam int stateDelayMs,
                              @RequestParam String gameName,
-                             @RequestParam String username) {
+                             @RequestParam String username,
+                             @RequestParam String ipAddress,
+                             @RequestParam int port) {
 
         SnakesProto.GameConfig gameConfig = SnakesProto.GameConfig
                 .newBuilder()
@@ -41,7 +43,7 @@ public class MasterController {
         gameInfo.setHeight(height);
         gameInfo.setWidth(width);
 
-        connectionService.createNewGamePlayer(username, "127.0.0.1", 8080, SnakesProto.NodeRole.MASTER);
+        connectionService.createNewGamePlayer(username, ipAddress, port, SnakesProto.NodeRole.MASTER);
         SnakesProto.GameState.Coord[] coords = connectionService.searchPlace();
         connectionService.createNewSnake(coords);
 
