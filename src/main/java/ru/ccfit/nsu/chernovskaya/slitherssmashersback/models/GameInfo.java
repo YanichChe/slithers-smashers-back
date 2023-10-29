@@ -13,22 +13,23 @@ import java.util.List;
 @Getter
 @Setter
 public class GameInfo {
-    private SnakesProto.GamePlayers gamePlayers = SnakesProto.GamePlayers.newBuilder().build();
-    private SnakesProto.GameConfig gameConfig = SnakesProto.GameConfig.newBuilder().build();
+
+    private SnakesProto.GameConfig gameConfig;
+
     private final Object monitor = new Object();
 
     private boolean canJoin = true;
+
     private String gameName;
 
     private List<SnakesProto.GameState.Snake> snakes = new ArrayList<>();
     private List<SnakesProto.GameState.Coord> foods = new ArrayList<>();
+    private List<SnakesProto.GamePlayer> gamePlayers = new ArrayList<>();
 
     private int msqSeq = -1;
 
-    @Value("${game.field.height}")
     private int height;
 
-    @Value("${game.field.width}")
     private int width;
 
      public synchronized int getIncrementMsgSeq() {
