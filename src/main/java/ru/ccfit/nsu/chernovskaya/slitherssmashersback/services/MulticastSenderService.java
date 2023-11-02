@@ -32,7 +32,7 @@ public class MulticastSenderService {
 
     @Scheduled(fixedRateString = "${multicast.sender.period}")
     public void sendAnnouncementMsgPeriodic() {
-        if (gameInfo.getGameConfig() != null) {
+        if (gameInfo.getGameConfig() != null && gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
 
             try (DatagramSocket socket = new DatagramSocket()) {
                 try {

@@ -37,6 +37,7 @@ public class MasterController {
         gameInfo.setGameName(gameRequest.getGameName());
         gameInfo.setHeight(gameRequest.getHeight());
         gameInfo.setWidth(gameRequest.getWidth());
+        gameInfo.setNodeRole(SnakesProto.NodeRole.MASTER);
 
         int id = connectionService.createNewGamePlayer(gameRequest.getUsername(), gameRequest.getIpAddress(),
                 gameRequest.getPort(), SnakesProto.NodeRole.MASTER);

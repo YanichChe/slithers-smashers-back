@@ -32,6 +32,8 @@ public class GameInfo {
 
     private int width;
 
+    private SnakesProto.NodeRole nodeRole;
+
      public synchronized int getIncrementMsgSeq() {
         msqSeq++;
         return msqSeq;
