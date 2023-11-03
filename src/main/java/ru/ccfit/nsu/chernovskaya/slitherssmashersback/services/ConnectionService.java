@@ -24,13 +24,11 @@ public class ConnectionService {
         return (id++);
     }
 
-    public int createNewGamePlayer(String username, String ipAddress, int port, SnakesProto.NodeRole nodeRole) {
+    public int createNewGamePlayer(String username, SnakesProto.NodeRole nodeRole) {
         int id = generateUniqueId();
         SnakesProto.GamePlayer gamePlayer = SnakesProto.GamePlayer
                 .newBuilder()
                 .setName(username)
-                .setIpAddressBytes(ByteString.copyFromUtf8(ipAddress))
-                .setPort(port)
                 .setScore(0)
                 .setId(id)
                 .setRole(nodeRole)

@@ -11,6 +11,4 @@ public class GameRequestDTO {
     private int stateDelayMs;
     private String gameName;
     private String username;
-    private String ipAddress;
-    private int port;
 }
