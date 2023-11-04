@@ -1,4 +1,4 @@
-package ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto.messages;
+package ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -10,6 +10,6 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 @NoArgsConstructor
 @Setter
 @Getter
-public class AnnouncementMsg extends Message{
+public class AnnouncementMsg {
     SnakesProto.GameAnnouncement gameAnnouncement;
 }
