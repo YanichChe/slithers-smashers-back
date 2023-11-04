@@ -38,4 +38,6 @@ public class GameInfo {
         msqSeq++;
         return msqSeq;
     }
+
+    private int stateOrder = 0;
 }
