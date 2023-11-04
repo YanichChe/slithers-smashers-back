@@ -2,6 +2,7 @@ package ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers;
 
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
@@ -17,6 +18,9 @@ public class MasterController {
     private final GameInfo gameInfo;
     private final ConnectionService connectionService;
 
+    @Value(value = "${state.delay.ms}")
+    private int stateDelayMs;
+
     @Autowired
     public MasterController(GameInfo gameInfo, ConnectionService connectionService) {
         this.gameInfo = gameInfo;
@@ -31,7 +35,7 @@ public class MasterController {
                 .setHeight(gameRequest.getHeight())
                 .setWidth(gameRequest.getWidth())
                 .setFoodStatic(gameRequest.getFoodStatic())
-                .setStateDelayMs(gameRequest.getStateDelayMs())
+                .setStateDelayMs(stateDelayMs)
                 .build();
 
         gameInfo.setGameName(gameRequest.getGameName());
