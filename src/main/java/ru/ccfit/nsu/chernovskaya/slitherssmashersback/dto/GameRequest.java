@@ -1,10 +1,9 @@
 package ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto;
 
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
-public class GameRequestDTO {
+public class GameRequest {
     private int height;
     private int width;
     private int foodStatic;

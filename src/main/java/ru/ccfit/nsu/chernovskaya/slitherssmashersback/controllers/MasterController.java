@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto.GameRequestDTO;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto.GameRequest;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.ConnectionService;
 
@@ -28,7 +28,7 @@ public class MasterController {
     }
 
     @PostMapping("/start")
-    public ResponseEntity<String> startGame(@RequestBody GameRequestDTO gameRequest) {
+    public ResponseEntity<String> startGame(@RequestBody GameRequest gameRequest) {
 
         SnakesProto.GameConfig gameConfig = SnakesProto.GameConfig
                 .newBuilder()
@@ -51,6 +51,6 @@ public class MasterController {
         gameInfo.setGameConfig(gameConfig);
 
         log.info("Game config " + gameConfig.toString());
-        return ResponseEntity.ok("Игра начата");
+        return ResponseEntity.ok("start game");
     }
 }
