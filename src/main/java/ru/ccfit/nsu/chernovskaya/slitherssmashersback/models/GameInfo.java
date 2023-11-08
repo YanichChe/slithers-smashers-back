@@ -15,29 +15,26 @@ import java.util.List;
 public class GameInfo {
 
     private SnakesProto.GameConfig gameConfig;
-
-    private final Object monitor = new Object();
-
     private boolean canJoin = true;
-
     private String gameName;
 
     private List<SnakesProto.GameState.Snake> snakes = new ArrayList<>();
     private List<SnakesProto.GameState.Coord> foods = new ArrayList<>();
     private List<SnakesProto.GamePlayer> gamePlayers = new ArrayList<>();
 
-    private int msqSeq = -1;
-
     private int height;
-
     private int width;
+    private String masterInetAddress;
+    private int masterPort;
 
+    private String playerName;
+    private int playerId;
+    private int msqSeq = -1;
     private SnakesProto.NodeRole nodeRole;
+    private int stateOrder = 0;
 
      public synchronized int getIncrementMsgSeq() {
         msqSeq++;
         return msqSeq;
     }
-
-    private int stateOrder = 0;
 }
