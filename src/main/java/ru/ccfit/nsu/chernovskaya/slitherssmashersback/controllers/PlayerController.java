@@ -9,11 +9,12 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.GameS
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto.Steer;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GamesInfo;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.ConnectionService;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.MasterService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.UnicastMessageService;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -25,15 +26,14 @@ public class PlayerController {
     private final GameInfo gameInfo;
     private final GamesInfo gamesInfo;
     private final UnicastMessageService unicastMessageService;
-    private final ConnectionService connectionService;
-
+    private final MasterService masterService;
     @Autowired
     public PlayerController(GameInfo gameInfo, GamesInfo gamesInfo, UnicastMessageService unicastMessageService,
-                            ConnectionService connectionService) {
+                            MasterService masterService) {
         this.gameInfo = gameInfo;
         this.gamesInfo = gamesInfo;
         this.unicastMessageService = unicastMessageService;
-        this.connectionService = connectionService;
+        this.masterService = masterService;
     }
 
     @GetMapping("/game-state")
@@ -45,18 +45,25 @@ public class PlayerController {
     }
 
     @PatchMapping("/change-direction")
-    synchronized public ResponseEntity<String> updateDirection(@RequestBody Steer steer) {
+    synchronized public ResponseEntity<String> updateDirection(@RequestBody Steer steer) throws UnknownHostException {
 
         if (gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
-            Iterator<SnakesProto.GameState.Snake> iterator = gameInfo.getSnakes().iterator();
-            while (iterator.hasNext()) {
-                SnakesProto.GameState.Snake snake = iterator.next();
-                if (snake.getPlayerId() == 0) {
-                    iterator.remove();
-                    gameInfo.getSnakes().add(snake.toBuilder().setHeadDirection(steer.getheadDirection()).build());
-                    return ResponseEntity.ok("update request");
-                }
-            }
+            masterService.changeSnakeDirection(0, steer.getheadDirection());
+        } else {
+            SnakesProto.GameMessage.SteerMsg steerMsg = SnakesProto.GameMessage.SteerMsg
+                    .newBuilder()
+                    .setDirection(steer.getheadDirection())
+                    .build();
+
+            SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage
+                    .newBuilder()
+                    .setSteer(steerMsg)
+                    .setMsgSeq(gameInfo.getIncrementMsgSeq())
+                    .setSenderId(gameInfo.getPlayerId())
+                    .build();
+
+            unicastMessageService.sendMessage(gameMessage, InetAddress.getByName(gameInfo.getMasterInetAddress()),
+                    gameInfo.getMasterPort());
         }
 
         return ResponseEntity.ok("update request");
