@@ -1,9 +1,12 @@
 package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
+
+import java.util.Iterator;
 
 @Service
 public class MasterService {
@@ -68,6 +71,17 @@ public class MasterService {
                     .build();
             connectionService.createNewSnake(coords, id);
             return gameMessageNew;
+        }
+    }
+
+    public void changeSnakeDirection(int playerId, SnakesProto.Direction direction) {
+        Iterator<SnakesProto.GameState.Snake> iterator = gameInfo.getSnakes().iterator();
+        while (iterator.hasNext()) {
+            SnakesProto.GameState.Snake snake = iterator.next();
+            if (snake.getPlayerId() == 0) {
+                iterator.remove();
+                gameInfo.getSnakes().add(snake.toBuilder().setHeadDirection(direction).build());
+            }
         }
     }
 }
