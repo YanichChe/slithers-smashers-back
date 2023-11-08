@@ -6,10 +6,12 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 
-@AllArgsConstructor
+import java.util.List;
+
 @NoArgsConstructor
+@AllArgsConstructor
 @Setter
 @Getter
-public class AnnouncementMsg {
-    SnakesProto.GameAnnouncement gameAnnouncement;
+public class GamesListMsg {
+    List<String> gamesName;
 }
