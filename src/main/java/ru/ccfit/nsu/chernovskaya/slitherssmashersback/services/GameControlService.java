@@ -17,6 +17,12 @@ public class GameControlService {
         this.gameInfo = gameInfo;
     }
 
+    public void updateState(SnakesProto.GameMessage.StateMsg stateMsg) {
+        gameInfo.setGamePlayers(stateMsg.getState().getPlayers().getPlayersList());
+        gameInfo.setSnakes(stateMsg.getState().getSnakesList());
+        gameInfo.setStateOrder(stateMsg.getState().getStateOrder());
+        gameInfo.setFoods(stateMsg.getState().getFoodsList());
+    }
     @Scheduled(fixedDelay = 1000)
     @Async
     public void gameStep() {
