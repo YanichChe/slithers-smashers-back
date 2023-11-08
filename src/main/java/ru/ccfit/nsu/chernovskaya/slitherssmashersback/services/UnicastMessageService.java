@@ -82,6 +82,9 @@ public class UnicastMessageService {
                     gameInfo.setPlayerId(gameMessage.getReceiverId());
                 } else if (gameMessage.hasError()) {
                     gameInfo.setPlayerId(-1);
+                } else if (gameMessage.hasSteer() & gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
+                    masterService.changeSnakeDirection(gameMessage.getSenderId(),
+                            gameMessage.getSteer().getDirection());
                 }
 
                 log.debug(gameMessage);
