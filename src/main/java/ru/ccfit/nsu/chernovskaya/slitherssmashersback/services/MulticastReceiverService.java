@@ -3,11 +3,13 @@ package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.Level;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GamesInfo;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -19,45 +21,44 @@ import java.util.Arrays;
 @Log4j2
 public class MulticastReceiverService {
     private final GameInfo gameInfo;
+    private final GamesInfo gamesInfo;
     @Value("${multicast.sender.address}")
     String groupAddress;
 
     @Value("${multicast.sender.port}")
     int groupPort;
 
-    public MulticastReceiverService(GameInfo gameInfo) {
+    public MulticastReceiverService(GameInfo gameInfo, GamesInfo gamesInfo) {
         this.gameInfo = gameInfo;
+        this.gamesInfo = gamesInfo;
     }
 
     @Async
-    @Scheduled(fixedDelay = 1000)
+    @EventListener(ApplicationReadyEvent.class)
     public void getMsg() {
-        if (gameInfo.getGameConfig() != null && !gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
-            try (MulticastSocket socket = new MulticastSocket(groupPort)) {
+        try (MulticastSocket socket = new MulticastSocket(groupPort)) {
 
-                byte[] buf = new byte[2048];
+            byte[] buf = new byte[2048];
 
-                socket.joinGroup(InetAddress.getByName(groupAddress));
+            socket.joinGroup(InetAddress.getByName(groupAddress));
 
-                while (true) {
-                    DatagramPacket packet = new DatagramPacket(buf, 0, buf.length);
-                    socket.receive(packet);
+            while (true) {
+                DatagramPacket packet = new DatagramPacket(buf, 0, buf.length);
+                socket.receive(packet);
 
-                    var data = Arrays.copyOfRange(packet.getData(), 0, packet.getLength());
-                    SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage.parseFrom(data);
+                var data = Arrays.copyOfRange(packet.getData(), 0, packet.getLength());
+                SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage.parseFrom(data);
 
-                    log.info(gameMessage);
+                log.debug(gameMessage);
 
-                    if (gameMessage.hasState()) {
-                        gameInfo.setGamePlayers(gameMessage.getState().getState().getPlayers().getPlayersList());
-                        gameInfo.setSnakes(gameMessage.getState().getState().getSnakesList());
-                        log.info(gameInfo.getSnakes());
-                    }
+                if (gameMessage.hasAnnouncement()) {
+                    gamesInfo.setGameAnnouncementList(gameMessage.getAnnouncement().getGamesList());
                 }
-
-            } catch (IOException e) {
-                log.atLevel(Level.ERROR).log(e.getMessage());
             }
+
+        } catch (IOException e) {
+            log.atLevel(Level.ERROR).log(e.getMessage());
         }
     }
 }
+
