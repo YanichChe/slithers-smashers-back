@@ -57,7 +57,8 @@ public class PlayerController {
      * @throws UnknownHostException
      */
     @PatchMapping("/change-direction")
-    synchronized public ResponseEntity<String> updateDirection(@RequestBody Steer steer) throws UnknownHostException {
+    synchronized public ResponseEntity<String> updateDirection(@RequestBody Steer steer) throws UnknownHostException,
+            InterruptedException {
 
         if (gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
             masterService.changeSnakeDirection(0, steer.getheadDirection());
@@ -76,6 +77,7 @@ public class PlayerController {
 
             unicastMessageService.sendMessage(gameMessage, InetAddress.getByName(gameInfo.getMasterInetAddress()),
                     gameInfo.getMasterPort());
+            unicastMessageService.waitAck(gameInfo.getMsqSeq(), gameMessage);
         }
 
         return ResponseEntity.ok("update request");
@@ -109,7 +111,9 @@ public class PlayerController {
      * @return сообщение об успехе присоединения.
      */
     @PostMapping("/join")
-    public ResponseEntity<String> sendJoinMessage(@RequestBody String gameName) {
+    public ResponseEntity<String> sendJoinMessage(@RequestBody String gameName)
+            throws UnknownHostException, InterruptedException {
+
         SnakesProto.GameMessage.JoinMsg joinMsg = SnakesProto.GameMessage.JoinMsg
                 .newBuilder()
                 .setPlayerName(gameInfo.getPlayerName())
@@ -131,7 +135,10 @@ public class PlayerController {
             return ResponseEntity.status(504).body("io error");
         }
 
-        //TODO получение результата подсоединения
+        int error = unicastMessageService.waitAck(gameInfo.getMsqSeq(), gameMessage);
+        if (error == 0) {
+            return ResponseEntity.ok("not found place");
+        }
 
         SnakesProto.GameAnnouncement gameAnnouncement = gamesInfo.getAnnouncementByName(gameName);
 

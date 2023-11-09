@@ -4,6 +4,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.Level;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
@@ -19,6 +20,11 @@ import java.util.Arrays;
 @Service
 @Log4j2
 public class UnicastMessageService {
+
+    private long receivedAck = -1;
+
+    @Value("${state_delay_ms}")
+    private long stateDelayMs;
 
     private DatagramSocket datagramSocket;
 
@@ -97,8 +103,10 @@ public class UnicastMessageService {
                 sendMessage(gameMessageNew, packet.getAddress(), packet.getPort());
 
             } else if (gameMessage.hasAck()) {
-                gameInfo.setPlayerId(gameMessage.getReceiverId());
+                receivedAck = gameMessage.getMsgSeq();
+                if (gameInfo.getPlayerId() == -1) gameInfo.setPlayerId(gameMessage.getReceiverId());
             } else if (gameMessage.hasError()) {
+                receivedAck = -2;
                 gameInfo.setPlayerId(-1);
             } else if (gameMessage.hasSteer() & gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
                 masterService.changeSnakeDirection(gameMessage.getSenderId(),
@@ -147,5 +155,28 @@ public class UnicastMessageService {
                 sendMessage(gameMessage, InetAddress.getByName(gamePlayer.getIpAddress()), gamePlayer.getPort());
             }
         }
+    }
+
+    public int waitAck(long expectedMsgSeq, SnakesProto.GameMessage gameMessage) throws UnknownHostException,
+            InterruptedException {
+
+
+        for (int i = 0; i < 10; i++) {
+
+            if (receivedAck == -2) {
+                receivedAck = -1;
+                return 0;
+            }
+
+            if (expectedMsgSeq == receivedAck) {
+                return 1;
+            }
+
+            sendMessage(gameMessage, InetAddress.getByName(gameInfo.getMasterInetAddress()),
+                    gameInfo.getMasterPort());
+
+            wait(stateDelayMs / 10);
+        }
+        return 0;
     }
 }
