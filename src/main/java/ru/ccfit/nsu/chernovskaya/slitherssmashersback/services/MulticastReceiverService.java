@@ -33,6 +33,11 @@ public class MulticastReceiverService {
         this.gamesInfo = gamesInfo;
     }
 
+    /**
+     * Получение сообщеения по мультикасту о списке текущих игр.
+     * При получении новго сообщения, старый список полностью обновляется
+     * новыми значенями.
+     */
     @Async
     @EventListener(ApplicationReadyEvent.class)
     public void getMsg() {

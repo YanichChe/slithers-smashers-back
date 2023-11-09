@@ -27,6 +27,15 @@ public class MasterController {
         this.connectionService = connectionService;
     }
 
+    /**
+     * Инициализация запуска игры.
+     * 1. Принимает config игры
+     * 2. заполняет поля game info
+     * 3. Создает игрока с ролью мастер и назначает ему змейку
+     *
+     * @param gameRequest параметры игры.
+     * @return ответ о успехе запуска игры
+     */
     @PostMapping("/start")
     public ResponseEntity<String> startGame(@RequestBody GameRequest gameRequest) {
 

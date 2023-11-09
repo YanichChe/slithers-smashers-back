@@ -43,6 +43,14 @@ public class UnicastMessageService {
         datagramSocket.close();
     }
 
+    /**
+     * Оправка сообщения на конкретный адрес по конкретному порту.
+     *
+     * @param gameMessage сообщение
+     * @param inetAddress адрес получателя
+     * @param port        порт получателя
+     * @return состояние по ошибке
+     */
     public int sendMessage(SnakesProto.GameMessage gameMessage, InetAddress inetAddress, int port) {
         try {
             byte[] buf = gameMessage.toByteArray();
@@ -56,47 +64,62 @@ public class UnicastMessageService {
         }
     }
 
+    /**
+     * Обработчик полученных сообщений.
+     *
+     * @throws IOException
+     */
     @Async
     @EventListener(ApplicationReadyEvent.class)
     public void receiveMessageTask() throws IOException {
-        if (gameInfo.getGameConfig() != null) {
-            byte[] buf = new byte[2048];
 
-            while (true) {
-                DatagramPacket packet = new DatagramPacket(buf, 0, buf.length);
-                datagramSocket.receive(packet);
+        byte[] buf = new byte[2048];
 
-                var data = Arrays.copyOfRange(packet.getData(), 0, packet.getLength());
-                SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage.parseFrom(data);
+        while (true) {
+            DatagramPacket packet = new DatagramPacket(buf, 0, buf.length);
+            datagramSocket.receive(packet);
 
-                if (gameMessage.hasState()) {
-                    gameControlService.updateState(gameMessage.getState());
-                } else if (gameMessage.hasDiscover() & gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
-                    SnakesProto.GameMessage gameMessageNew = masterService.generateAnnouncementMessage();
-                    sendMessage(gameMessageNew, packet.getAddress(), packet.getPort());
-                } else if (gameMessage.hasJoin()) {
-                    SnakesProto.GameMessage gameMessageNew =
-                            masterService.joinHandler(gameMessage.getJoin().getPlayerName());
-                    sendMessage(gameMessageNew, packet.getAddress(), packet.getPort());
-                } else if (gameMessage.hasAck()) {
-                    gameInfo.setPlayerId(gameMessage.getReceiverId());
-                } else if (gameMessage.hasError()) {
-                    gameInfo.setPlayerId(-1);
-                } else if (gameMessage.hasSteer() & gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
-                    masterService.changeSnakeDirection(gameMessage.getSenderId(),
-                            gameMessage.getSteer().getDirection());
-                }
+            var data = Arrays.copyOfRange(packet.getData(), 0, packet.getLength());
+            SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage.parseFrom(data);
 
-                log.debug(gameMessage);
+            log.error(gameMessage);
+            if (gameMessage.hasState()) {
+                gameControlService.updateState(gameMessage.getState());
+            } else if (gameMessage.hasDiscover() & gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
+                SnakesProto.GameMessage gameMessageNew = masterService.generateAnnouncementMessage();
+                sendMessage(gameMessageNew, packet.getAddress(), packet.getPort());
+            } else if (gameMessage.hasJoin()) {
+
+                SnakesProto.GameMessage gameMessageNew =
+                        masterService.joinHandler(gameMessage.getJoin().getPlayerName(),
+                                String.valueOf(packet.getAddress()), packet.getPort());
+
+                sendMessage(gameMessageNew, packet.getAddress(), packet.getPort());
+
+            } else if (gameMessage.hasAck()) {
+                gameInfo.setPlayerId(gameMessage.getReceiverId());
+            } else if (gameMessage.hasError()) {
+                gameInfo.setPlayerId(-1);
+            } else if (gameMessage.hasSteer() & gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
+                masterService.changeSnakeDirection(gameMessage.getSenderId(),
+                        gameMessage.getSteer().getDirection());
             }
+
+            log.debug(gameMessage);
         }
     }
 
+    /**
+     * Отправка всем участникам игры сообщение о состоянии игры.
+     *
+     * @throws UnknownHostException
+     */
     @Async
     @Scheduled(fixedRateString = "${state.delay.ms}")
     public void sendStateMsgPeriodic() throws UnknownHostException {
-        if (gameInfo.getGameConfig() != null && gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
 
+
+        if (gameInfo.getGameConfig() != null && gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
 
             gameInfo.setStateOrder(gameInfo.getStateOrder() + 1);
 

@@ -17,12 +17,23 @@ public class GameControlService {
         this.gameInfo = gameInfo;
     }
 
+    /**
+     *
+     * Обновление данных о игре в @GameInfo через полученное сообщение от сервера.
+     *
+     * @param stateMsg сообщение о состоянии игры.
+     */
     public void updateState(SnakesProto.GameMessage.StateMsg stateMsg) {
         gameInfo.setGamePlayers(stateMsg.getState().getPlayers().getPlayersList());
         gameInfo.setSnakes(stateMsg.getState().getSnakesList());
         gameInfo.setStateOrder(stateMsg.getState().getStateOrder());
         gameInfo.setFoods(stateMsg.getState().getFoodsList());
     }
+
+    /**
+     * Шаг игры.
+     * 1. По результатам поворота головы змеи, змея за каждый шаг продвигается вперед.
+     */
     @Scheduled(fixedDelay = 1000)
     @Async
     public void gameStep() {

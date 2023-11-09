@@ -33,6 +33,11 @@ public class MulticastSenderService {
         this.masterService = masterService;
     }
 
+    /**
+     * Задача которая выполняется раз в ${multicast.sender.period}.
+     * Если была создана игра и текущая роль - мастер, то рассылается
+     * сообщение с существованием игры на мультикаст адрес.
+     */
     @Async
     @Scheduled(fixedRateString = "${multicast.sender.period}")
     public void sendAnnouncementMsgPeriodic() {
@@ -41,7 +46,6 @@ public class MulticastSenderService {
             try (DatagramSocket socket = new DatagramSocket()) {
                 try {
                     SnakesProto.GameMessage gameMessage = masterService.generateAnnouncementMessage();
-                    log.info(gameMessage);
                     byte[] buf = gameMessage.toByteArray();
 
                     DatagramPacket packet = new DatagramPacket(buf, buf.length,

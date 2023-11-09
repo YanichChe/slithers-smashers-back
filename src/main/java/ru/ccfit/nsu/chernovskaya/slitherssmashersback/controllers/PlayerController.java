@@ -36,6 +36,9 @@ public class PlayerController {
         this.masterService = masterService;
     }
 
+    /**
+     * @return состояние игры
+     */
     @GetMapping("/game-state")
     public ResponseEntity<GameStateMsg> getGameState() {
         GameStateMsg gameStateMsg = new GameStateMsg(gameInfo.getGamePlayers(), gameInfo.getSnakes());
@@ -44,6 +47,15 @@ public class PlayerController {
                 .body(gameStateMsg);
     }
 
+    /**
+     * Обновление напрвления змейки.
+     * Если змейка не является MASTER то отправляется сообщение о смене направления
+     * серверу.
+     *
+     * @param steer - новое направление змейки
+     * @return сообщение об успехе
+     * @throws UnknownHostException
+     */
     @PatchMapping("/change-direction")
     synchronized public ResponseEntity<String> updateDirection(@RequestBody Steer steer) throws UnknownHostException {
 
@@ -69,6 +81,12 @@ public class PlayerController {
         return ResponseEntity.ok("update request");
     }
 
+    /**
+     *
+     * Список в текущих доступных игр.
+     *
+     * @return сообщение со списком названий игр.
+     */
     @GetMapping("/games-list")
     public ResponseEntity<GamesListMsg> getGamesList() {
 
@@ -84,6 +102,12 @@ public class PlayerController {
         return ResponseEntity.ok().body(gamesListMsg);
     }
 
+    /**
+     * Запрос на подключение к игре
+     *
+     * @param gameName название игры, к которой хотят присоединиться
+     * @return сообщение об успехе присоединения.
+     */
     @PostMapping("/join")
     public ResponseEntity<String> sendJoinMessage(@RequestBody String gameName) {
         SnakesProto.GameMessage.JoinMsg joinMsg = SnakesProto.GameMessage.JoinMsg

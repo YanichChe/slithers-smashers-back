@@ -20,10 +20,47 @@ public class ConnectionService {
         this.gameInfo = gameInfo;
     }
 
+    /**
+     * Генерация индификатора.
+     *
+     * @return id
+     */
     synchronized private int generateUniqueId() {
         return (id++);
     }
 
+    /**
+     * Создает нового игрока.
+     *
+     * @param username имя юзера
+     * @param nodeRole роль в игре
+     * @param ipAddress адресс юзера
+     * @param port порт юзера
+     * @return уникальный инфификатор игрока
+     */
+    public int createNewGamePlayer(String username, SnakesProto.NodeRole nodeRole, String ipAddress, int port) {
+        int id = generateUniqueId();
+        SnakesProto.GamePlayer gamePlayer = SnakesProto.GamePlayer
+                .newBuilder()
+                .setName(username)
+                .setScore(0)
+                .setId(id)
+                .setIpAddress(ipAddress)
+                .setPort(port)
+                .setRole(nodeRole)
+                .build();
+        gameInfo.getGamePlayers().add(gamePlayer);
+        log.info("New player " + gamePlayer.toString());
+        return id;
+    }
+
+    /**
+     * Создает нового игрока.
+     *
+     * @param username имя юзера
+     * @param nodeRole роль в игре
+     * @return уникальный инфификатор игрока
+     */
     public int createNewGamePlayer(String username, SnakesProto.NodeRole nodeRole) {
         int id = generateUniqueId();
         SnakesProto.GamePlayer gamePlayer = SnakesProto.GamePlayer
@@ -38,6 +75,12 @@ public class ConnectionService {
         return id;
     }
 
+    /**
+     * Создает змейку на заданных координатах для игрока с id
+     *
+     * @param coords коордиинаты змейки
+     * @param id инфикатор владельца змейки
+     */
     public void createNewSnake(SnakesProto.GameState.Coord[] coords, int id) {
         SnakesProto.GameState.Snake snake = SnakesProto.GameState.Snake
                 .newBuilder()
@@ -52,6 +95,11 @@ public class ConnectionService {
         log.info("New snake " + snake.toString());
     }
 
+    /**
+     * Алгоритм поиска свободного квадрат 5х5
+     *
+     * @return свободные координаты
+     */
     public SnakesProto.GameState.Coord[] searchPlace() {
         SnakesProto.GameState.Coord[] coords = new SnakesProto.GameState.Coord[2];
 
