@@ -28,12 +28,14 @@ public class GameInfo {
     private int masterPort;
 
     private String playerName;
-    private int playerId;
-    private int msqSeq = -1;
+    private int playerId = -1;
+
+    private long msqSeq = -1;
+
     private SnakesProto.NodeRole nodeRole;
     private int stateOrder = 0;
 
-     public synchronized int getIncrementMsgSeq() {
+     public synchronized long getIncrementMsgSeq() {
         msqSeq++;
         return msqSeq;
     }
