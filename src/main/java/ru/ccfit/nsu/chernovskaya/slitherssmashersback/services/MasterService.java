@@ -97,6 +97,16 @@ public class MasterService {
         while (iterator.hasNext()) {
             SnakesProto.GameState.Snake snake = iterator.next();
             if (snake.getPlayerId() == playerId) {
+                if (snake.getHeadDirection().equals(SnakesProto.Direction.UP) &&
+                        direction.equals(SnakesProto.Direction.DOWN)
+                        || snake.getHeadDirection().equals(SnakesProto.Direction.DOWN) &&
+                        direction.equals(SnakesProto.Direction.UP)
+                        || snake.getHeadDirection().equals(SnakesProto.Direction.RIGHT) &&
+                        direction.equals(SnakesProto.Direction.LEFT)
+                        || snake.getHeadDirection().equals(SnakesProto.Direction.LEFT) &&
+                        direction.equals(SnakesProto.Direction.RIGHT)
+                )
+                    break;
                 iterator.remove();
                 gameInfo.getSnakes().add(snake.toBuilder().setHeadDirection(direction).build());
                 break;

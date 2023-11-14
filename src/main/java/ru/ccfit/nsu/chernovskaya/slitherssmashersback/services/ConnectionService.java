@@ -140,7 +140,7 @@ public class ConnectionService {
                 }
                 if (isZeroSquare) {
                     coords[0] = SnakesProto.GameState.Coord.newBuilder().setX(i + 2).setY(j + 2).build();
-                    coords[1] = SnakesProto.GameState.Coord.newBuilder().setX(i + 2).setY(j + 3).build();
+                    coords[1] = SnakesProto.GameState.Coord.newBuilder().setX(i + 3).setY(j + 2).build();
                     return coords;
                 }
             }
