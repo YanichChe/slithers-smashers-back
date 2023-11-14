@@ -9,6 +9,7 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto.GameRequest;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.ConnectionService;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.FoodService;
 
 @RestController
 @RequestMapping("/master")
@@ -17,14 +18,16 @@ public class MasterController {
 
     private final GameInfo gameInfo;
     private final ConnectionService connectionService;
+    private final FoodService foodService;
 
     @Value(value = "${state.delay.ms}")
     private int stateDelayMs;
 
     @Autowired
-    public MasterController(GameInfo gameInfo, ConnectionService connectionService) {
+    public MasterController(GameInfo gameInfo, ConnectionService connectionService, FoodService foodService) {
         this.gameInfo = gameInfo;
         this.connectionService = connectionService;
+        this.foodService = foodService;
     }
 
     /**
@@ -47,17 +50,19 @@ public class MasterController {
                 .setStateDelayMs(stateDelayMs)
                 .build();
 
+        gameInfo.setGameConfig(gameConfig);
+
         gameInfo.setGameName(gameRequest.getGameName());
         gameInfo.setHeight(gameRequest.getHeight());
         gameInfo.setWidth(gameRequest.getWidth());
         gameInfo.setNodeRole(SnakesProto.NodeRole.MASTER);
 
+        foodService.generateFood();
         int id = connectionService.createNewGamePlayer(gameRequest.getUsername(), SnakesProto.NodeRole.MASTER);
 
         SnakesProto.GameState.Coord[] coords = connectionService.searchPlace();
         connectionService.createNewSnake(coords, id);
 
-        gameInfo.setGameConfig(gameConfig);
 
         log.info("Game config " + gameConfig.toString());
         return ResponseEntity.ok("start game");

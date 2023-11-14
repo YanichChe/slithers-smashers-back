@@ -99,6 +99,7 @@ public class MasterService {
             if (snake.getPlayerId() == playerId) {
                 iterator.remove();
                 gameInfo.getSnakes().add(snake.toBuilder().setHeadDirection(direction).build());
+                break;
             }
         }
     }

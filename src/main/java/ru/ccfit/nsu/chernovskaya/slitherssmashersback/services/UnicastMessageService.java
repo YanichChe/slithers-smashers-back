@@ -23,7 +23,7 @@ public class UnicastMessageService {
 
     private long receivedAck = -1;
 
-    @Value("${state_delay_ms}")
+    @Value("${state.delay.ms}")
     private long stateDelayMs;
 
     private DatagramSocket datagramSocket;

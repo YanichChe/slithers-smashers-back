@@ -12,9 +12,11 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 public class GameControlService {
 
     private final GameInfo gameInfo;
+    private final FoodService foodService;
 
-    public GameControlService(GameInfo gameInfo) {
+    public GameControlService(GameInfo gameInfo, FoodService foodService) {
         this.gameInfo = gameInfo;
+        this.foodService = foodService;
     }
 
     /**
@@ -80,6 +82,7 @@ public class GameControlService {
                 gameInfo.getSnakes().add(i, modifiedSnake);
 
                 log.debug(modifiedSnake.getPointsList());
+                foodService.generateFood();
             }
         }
     }

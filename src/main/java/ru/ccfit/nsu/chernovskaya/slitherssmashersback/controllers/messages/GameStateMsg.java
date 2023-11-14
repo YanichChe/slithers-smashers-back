@@ -1,9 +1,6 @@
 package ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 
 import java.util.ArrayList;
@@ -40,7 +37,10 @@ public class GameStateMsg {
         List<Coord> coordList;
     }
 
-    public GameStateMsg(List<SnakesProto.GamePlayer> gamePlayers, List<SnakesProto.GameState.Snake> snakes) {
+    public GameStateMsg(List<SnakesProto.GamePlayer> gamePlayers,
+                        List<SnakesProto.GameState.Snake> snakes,
+                        List<SnakesProto.GameState.Coord> foods
+    ) {
         for (SnakesProto.GamePlayer gamePlayer : gamePlayers) {
             GamePlayer newGamePlayer = new GamePlayer(gamePlayer.getName(), gamePlayer.getScore());
             this.gamePlayers.add(newGamePlayer);
@@ -56,8 +56,13 @@ public class GameStateMsg {
             this.snakeList.add(newSnake);
         }
 
+        for (SnakesProto.GameState.Coord food: foods) {
+            this.foods.add(new Coord(food.getX(), food.getY()));
+        }
+
     }
 
     List<GamePlayer> gamePlayers = new ArrayList<>();
     List<Snake> snakeList = new ArrayList<>();
+    List<Coord> foods = new ArrayList<>();
 }

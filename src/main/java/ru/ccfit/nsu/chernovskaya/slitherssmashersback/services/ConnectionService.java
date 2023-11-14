@@ -121,7 +121,7 @@ public class ConnectionService {
         }
 
         for (SnakesProto.GameState.Coord coord : gameInfo.getFoods()) {
-            gameField[coord.getX() * width + coord.getY()] = 1;
+            gameField[coord.getY() * width + coord.getX()] = 1;
         }
 
         for (int i = 0; i <= height - 5; i++) {

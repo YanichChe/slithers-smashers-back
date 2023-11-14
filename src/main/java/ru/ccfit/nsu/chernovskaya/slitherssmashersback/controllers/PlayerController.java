@@ -1,5 +1,6 @@
 package ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers;
 
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +22,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/player")
+@Log4j2
 public class PlayerController {
 
     private final GameInfo gameInfo;
@@ -41,7 +43,9 @@ public class PlayerController {
      */
     @GetMapping("/game-state")
     public ResponseEntity<GameStateMsg> getGameState() {
-        GameStateMsg gameStateMsg = new GameStateMsg(gameInfo.getGamePlayers(), gameInfo.getSnakes());
+        GameStateMsg gameStateMsg = new GameStateMsg(gameInfo.getGamePlayers(),
+                                                     gameInfo.getSnakes(),
+                                                     gameInfo.getFoods());
 
         return ResponseEntity.ok()
                 .body(gameStateMsg);
