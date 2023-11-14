@@ -29,14 +29,33 @@ public class GameInfo {
 
     private String playerName;
     private int playerId = -1;
+    private boolean increase;
 
     private long msqSeq = -1;
 
     private SnakesProto.NodeRole nodeRole;
     private int stateOrder = 0;
 
-     public synchronized long getIncrementMsgSeq() {
+    public synchronized long getIncrementMsgSeq() {
         msqSeq++;
         return msqSeq;
+    }
+
+    public int findPlayerIndexById(long id) {
+        for (int i = 0; i < gamePlayers.size(); i++) {
+            SnakesProto.GamePlayer gamePlayer = gamePlayers.get(i);
+            return i;
+        }
+        return -1;
+    }
+
+    public int findFoodIndexByInt(int coord) {
+        for (int i = 0; i < foods.size(); i++) {
+            SnakesProto.GameState.Coord food = foods.get(i);
+            if (food.getY() * width + food.getX() == coord) {
+                return i;
+            }
+        }
+        return -1;
     }
 }

@@ -7,6 +7,9 @@ import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 @Log4j2
 public class GameControlService {
@@ -20,7 +23,6 @@ public class GameControlService {
     }
 
     /**
-     *
      * Обновление данных о игре в @GameInfo через полученное сообщение от сервера.
      *
      * @param stateMsg сообщение о состоянии игры.
@@ -41,6 +43,7 @@ public class GameControlService {
     public void gameStep() {
         if (gameInfo.getSnakes() != null) {
             for (int i = 0; i < gameInfo.getSnakes().size(); i++) {
+
                 SnakesProto.GameState.Snake snake = gameInfo.getSnakes().get(i);
                 int headX = snake.getPoints(0).getX();
                 int headY = snake.getPoints(0).getY();
@@ -71,7 +74,10 @@ public class GameControlService {
                 modifiedSnakeBuilder.clearPoints();
 
                 modifiedSnakeBuilder.addPoints(newHeadCoord);
-                for (int j = 0; j < snake.getPointsList().size() - 1; j++) {
+
+                int to = snake.getPointsList().size() - 1;
+                if (gameInfo.isIncrease()) to += 1;
+                for (int j = 0; j < to; j++) {
                     SnakesProto.GameState.Coord point = snake.getPoints(j);
                     modifiedSnakeBuilder.addPoints(point);
                 }
@@ -82,8 +88,42 @@ public class GameControlService {
                 gameInfo.getSnakes().add(i, modifiedSnake);
 
                 log.debug(modifiedSnake.getPointsList());
+
+                handlerEatenFood();
                 foodService.generateFood();
             }
         }
     }
+
+    private void handlerEatenFood() {
+        gameInfo.setIncrease(false);
+        List<Integer> foodCoords = new ArrayList<>();
+        for (SnakesProto.GameState.Coord coord : gameInfo.getFoods()) {
+            foodCoords.add(coord.getY() * gameInfo.getWidth() + coord.getX());
+        }
+
+        for (SnakesProto.GameState.Snake snake : gameInfo.getSnakes()) {
+            for (int x : foodCoords) {
+                if (snake.getPoints(0).getY() * gameInfo.getWidth() +
+                        snake.getPoints(0).getX() == x) {
+                    int indexPlayer =  gameInfo.findPlayerIndexById(snake.getPlayerId());
+                    SnakesProto.GamePlayer gamePlayer = gameInfo.getGamePlayers().get(indexPlayer);
+
+                    SnakesProto.GamePlayer.Builder modifiedPlayerGameBuilder = gamePlayer.toBuilder();
+                    modifiedPlayerGameBuilder.setScore(gamePlayer.getScore() + 1);
+
+                    gameInfo.getGamePlayers().remove(indexPlayer);
+                    gameInfo.getGamePlayers().add(indexPlayer, modifiedPlayerGameBuilder.build());
+
+                    int index = gameInfo.findFoodIndexByInt(x);
+                    gameInfo.getFoods().remove(index);
+
+                    log.debug(modifiedPlayerGameBuilder.getScore());
+                    gameInfo.setIncrease(true);
+                    break;
+                }
+            }
+        }
+    }
 }
+
