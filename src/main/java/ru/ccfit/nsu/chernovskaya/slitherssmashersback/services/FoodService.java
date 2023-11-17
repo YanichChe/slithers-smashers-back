@@ -32,12 +32,13 @@ public class FoodService {
             occupiedCoords.add(coord.getY() * height + coord.getX());
         }
 
-        for (int i = 0; i < gameInfo.getGameConfig().getFoodStatic() - gameInfo.getFoods().size(); i++) {
+        for (int i = 0; i < gameInfo.getGameConfig().getFoodStatic() + getAliveSnakesCount()
+                - gameInfo.getFoods().size(); i++) {
 
             if (occupiedCoords.size() == height * width) break;
 
-            int  coordNewFood = (int) (Math.random() * (height * width + 1));
-            
+            int coordNewFood = (int) (Math.random() * (height * width + 1));
+
             while (occupiedCoords.contains(coordNewFood)) {
                 coordNewFood = (int) (Math.random() * (height * width + 1));
             }
@@ -46,11 +47,25 @@ public class FoodService {
 
             SnakesProto.GameState.Coord coordNewFoodXY = SnakesProto.GameState.Coord
                     .newBuilder()
-                    .setY(coordNewFood  / width)
+                    .setY(coordNewFood / width)
                     .setX(coordNewFood % width)
                     .build();
-            
+
             gameInfo.getFoods().add(coordNewFoodXY);
         }
+    }
+
+    /**
+     * @return количество живых змей в игре
+     */
+    private int getAliveSnakesCount() {
+        int total = 0;
+
+        for (SnakesProto.GameState.Snake snake : gameInfo.getSnakes()) {
+            if (snake.getState().equals(SnakesProto.GameState.Snake.SnakeState.ALIVE)) {
+                total++;
+            }
+        }
+        return total;
     }
 }
