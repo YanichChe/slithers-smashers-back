@@ -45,8 +45,10 @@ public class PlayerController {
     public ResponseEntity<GameStateMsg> getGameState() {
         GameStateMsg gameStateMsg = new GameStateMsg(gameInfo.getGamePlayers(),
                                                      gameInfo.getSnakes(),
-                                                     gameInfo.getFoods());
+                                                     gameInfo.getFoods(),
+                                                     gameInfo.isAlive());
 
+        log.info(gameInfo.getSnakes());
         return ResponseEntity.ok()
                 .body(gameStateMsg);
     }

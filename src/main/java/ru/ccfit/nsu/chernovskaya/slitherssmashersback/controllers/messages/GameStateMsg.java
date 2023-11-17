@@ -39,7 +39,8 @@ public class GameStateMsg {
 
     public GameStateMsg(List<SnakesProto.GamePlayer> gamePlayers,
                         List<SnakesProto.GameState.Snake> snakes,
-                        List<SnakesProto.GameState.Coord> foods
+                        List<SnakesProto.GameState.Coord> foods,
+                        boolean isAlive
     ) {
         for (SnakesProto.GamePlayer gamePlayer : gamePlayers) {
             GamePlayer newGamePlayer = new GamePlayer(gamePlayer.getName(), gamePlayer.getScore());
@@ -60,9 +61,12 @@ public class GameStateMsg {
             this.foods.add(new Coord(food.getX(), food.getY()));
         }
 
+        this.isAlive = isAlive;
     }
 
-    List<GamePlayer> gamePlayers = new ArrayList<>();
-    List<Snake> snakeList = new ArrayList<>();
-    List<Coord> foods = new ArrayList<>();
+    private List<GamePlayer> gamePlayers = new ArrayList<>();
+    private List<Snake> snakeList = new ArrayList<>();
+    private List<Coord> foods = new ArrayList<>();
+    private boolean isAlive;
+    private int score;
 }

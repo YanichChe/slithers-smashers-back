@@ -8,7 +8,10 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Log4j2
@@ -90,6 +93,8 @@ public class GameControlService {
                 log.debug(modifiedSnake.getPointsList());
 
                 handlerEatenFood();
+                intersectionHandler();
+
                 foodService.generateFood();
             }
         }
@@ -106,7 +111,7 @@ public class GameControlService {
             for (int x : foodCoords) {
                 if (snake.getPoints(0).getY() * gameInfo.getWidth() +
                         snake.getPoints(0).getX() == x) {
-                    int indexPlayer =  gameInfo.findPlayerIndexById(snake.getPlayerId());
+                    int indexPlayer = gameInfo.findPlayerIndexById(snake.getPlayerId());
                     SnakesProto.GamePlayer gamePlayer = gameInfo.getGamePlayers().get(indexPlayer);
 
                     SnakesProto.GamePlayer.Builder modifiedPlayerGameBuilder = gamePlayer.toBuilder();
@@ -121,6 +126,56 @@ public class GameControlService {
                     log.debug(modifiedPlayerGameBuilder.getScore());
                     gameInfo.setIncrease(true);
                     break;
+                }
+            }
+        }
+    }
+
+    private void intersectionHandler() {
+        List<List<Integer>> snakesCoords = new ArrayList<>();
+        for (SnakesProto.GameState.Snake snake : gameInfo.getSnakes()) {
+            List<Integer> newList = new ArrayList<>();
+            for (SnakesProto.GameState.Coord coord : snake.getPointsList()) {
+                newList.add(coord.getY() * gameInfo.getWidth() + coord.getX());
+            }
+            snakesCoords.add(newList);
+        }
+
+        for (int i = 0; i < snakesCoords.size(); i++) {
+            for (int j = 0; j < snakesCoords.size(); j++) {
+                if (i != j) {
+                    for (int k = 0; k < snakesCoords.get(j).size(); k++) {
+                        if (snakesCoords.get(i).get(0) == snakesCoords.get(j).get(k)) {
+                            if (k != 0) {
+                                gameInfo.setAlive(false);
+                                SnakesProto.GamePlayer gamePlayer = gameInfo.getGamePlayers()
+                                        .get(gameInfo.findPlayerIndexById(gameInfo.getSnakes().get(j).getPlayerId()));
+                                gameInfo.getSnakes().remove(i);
+                            } else {
+                                gameInfo.setAlive(false);
+
+                                SnakesProto.GamePlayer gamePlayer = gameInfo.getGamePlayers()
+                                        .get(gameInfo.findPlayerIndexById(gameInfo.getSnakes().get(j).getPlayerId()));
+                                gameInfo.getSnakes().remove(i);
+                                gameInfo.getSnakes().remove(j);
+                            }
+                        }
+                    }
+                } else {
+
+                    Set<Integer> set = new HashSet<>();
+                    List<Object> duplicates = new ArrayList<>();
+                    snakesCoords.get(i).forEach(n -> {
+                        if (!set.add(n)) {
+                            duplicates.add(n);
+                        }
+                    });
+
+                    if (!duplicates.isEmpty()) {
+                        gameInfo.setAlive(false);
+                        log.info(gameInfo.getSnakes().get(i));
+                        gameInfo.getSnakes().remove(i);
+                    }
                 }
             }
         }
