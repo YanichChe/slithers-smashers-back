@@ -29,6 +29,7 @@ public class PlayerController {
     private final GamesInfo gamesInfo;
     private final UnicastMessageService unicastMessageService;
     private final MasterService masterService;
+
     @Autowired
     public PlayerController(GameInfo gameInfo, GamesInfo gamesInfo, UnicastMessageService unicastMessageService,
                             MasterService masterService) {
@@ -43,12 +44,14 @@ public class PlayerController {
      */
     @GetMapping("/game-state")
     public ResponseEntity<GameStateMsg> getGameState() {
+        SnakesProto.GamePlayer gamePlayer = gameInfo.getGamePlayers().get(gameInfo.findPlayerIndexById(gameInfo.getPlayerId()));
         GameStateMsg gameStateMsg = new GameStateMsg(gameInfo.getGamePlayers(),
-                                                     gameInfo.getSnakes(),
-                                                     gameInfo.getFoods(),
-                                                     gameInfo.isAlive());
+                gameInfo.getSnakes(),
+                gameInfo.getFoods(),
+                gameInfo.isAlive(),
+                gamePlayer.getScore());
 
-        log.info(gameInfo.getSnakes());
+        log.debug(gameInfo.getSnakes());
         return ResponseEntity.ok()
                 .body(gameStateMsg);
     }
@@ -90,7 +93,6 @@ public class PlayerController {
     }
 
     /**
-     *
      * Список в текущих доступных игр.
      *
      * @return сообщение со списком названий игр.
@@ -152,6 +154,7 @@ public class PlayerController {
         gameInfo.setGameConfig(gameAnnouncement.getConfig());
         gameInfo.setCanJoin(gameAnnouncement.getCanJoin());
         gameInfo.setGameName(gameAnnouncement.getGameName());
+        gameInfo.setAlive(true);
 
         return ResponseEntity.ok("join");
     }

@@ -42,6 +42,7 @@ public class MasterController {
     @PostMapping("/start")
     public ResponseEntity<String> startGame(@RequestBody GameRequest gameRequest) {
 
+        gameInfo.setAlive(true);
         SnakesProto.GameConfig gameConfig = SnakesProto.GameConfig
                 .newBuilder()
                 .setHeight(gameRequest.getHeight())
