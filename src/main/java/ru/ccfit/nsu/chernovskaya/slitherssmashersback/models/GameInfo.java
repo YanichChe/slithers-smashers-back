@@ -44,8 +44,9 @@ public class GameInfo {
 
     public int findPlayerIndexById(long id) {
         for (int i = 0; i < gamePlayers.size(); i++) {
-            SnakesProto.GamePlayer gamePlayer = gamePlayers.get(i);
-            return i;
+            if (gamePlayers.get(i).getId() == id) {
+                return i;
+            }
         }
         return -1;
     }
@@ -58,5 +59,19 @@ public class GameInfo {
             }
         }
         return -1;
+    }
+
+    /**
+     * @param index индекс игрока
+     * @param nodeRole тип игрока
+     */
+    public void updateGamePlayer(int index, SnakesProto.NodeRole nodeRole) {
+        SnakesProto.GamePlayer updatedGamePlayer =
+                gamePlayers.get(index)
+                        .toBuilder()
+                        .setRole(nodeRole)
+                        .build();
+
+        gamePlayers.add(index, updatedGamePlayer);
     }
 }

@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @Log4j2
@@ -95,11 +94,15 @@ public class GameControlService {
                 handlerEatenFood();
                 intersectionHandler();
 
-                foodService.generateFood();
+                foodService.generateFood(gameInfo.getGameConfig().getFoodStatic() + getAliveSnakesCount()
+                        - gameInfo.getFoods().size());
             }
         }
     }
 
+    /**
+     * Обработчик съеденной еды
+     */
     private void handlerEatenFood() {
         gameInfo.setIncrease(false);
         List<Integer> foodCoords = new ArrayList<>();
@@ -131,6 +134,9 @@ public class GameControlService {
         }
     }
 
+    /**
+     * Обработчик столкновений.
+     */
     private void intersectionHandler() {
         List<List<Integer>> snakesCoords = new ArrayList<>();
         for (SnakesProto.GameState.Snake snake : gameInfo.getSnakes()) {
@@ -144,25 +150,33 @@ public class GameControlService {
         for (int i = 0; i < snakesCoords.size(); i++) {
             for (int j = 0; j < snakesCoords.size(); j++) {
                 if (i != j) {
+                    //случай когда две разные змейки
                     for (int k = 0; k < snakesCoords.get(j).size(); k++) {
                         if (snakesCoords.get(i).get(0) == snakesCoords.get(j).get(k)) {
                             if (k != 0) {
                                 gameInfo.setAlive(false);
-                                SnakesProto.GamePlayer gamePlayer = gameInfo.getGamePlayers()
-                                        .get(gameInfo.findPlayerIndexById(gameInfo.getSnakes().get(j).getPlayerId()));
+                                int gamePlayerIndex = gameInfo.getSnakes().get(i).getPlayerId();
+
+                                gameInfo.updateGamePlayer(gamePlayerIndex, SnakesProto.NodeRole.VIEWER);
+
                                 gameInfo.getSnakes().remove(i);
                             } else {
+                                //случай когда врезались две головы
                                 gameInfo.setAlive(false);
 
-                                SnakesProto.GamePlayer gamePlayer = gameInfo.getGamePlayers()
-                                        .get(gameInfo.findPlayerIndexById(gameInfo.getSnakes().get(j).getPlayerId()));
+                                int gamePlayerIndex = gameInfo.getSnakes().get(i).getPlayerId();
+                                gameInfo.updateGamePlayer(gamePlayerIndex, SnakesProto.NodeRole.VIEWER);
+
+                                int gamePlayerIndex_ = gameInfo.getSnakes().get(j).getPlayerId();
+                                gameInfo.updateGamePlayer(gamePlayerIndex_, SnakesProto.NodeRole.VIEWER);
+
                                 gameInfo.getSnakes().remove(i);
                                 gameInfo.getSnakes().remove(j);
                             }
                         }
                     }
                 } else {
-
+                    // обработка столкновения змейки с самой собой
                     Set<Integer> set = new HashSet<>();
                     List<Object> duplicates = new ArrayList<>();
                     snakesCoords.get(i).forEach(n -> {
@@ -173,12 +187,48 @@ public class GameControlService {
 
                     if (!duplicates.isEmpty()) {
                         gameInfo.setAlive(false);
-                        log.info(gameInfo.getSnakes().get(i));
+
+                        log.info("Snake died cause: itself " + gameInfo.getSnakes().get(i));
+
+                        int gamePlayerIndex = gameInfo.getSnakes().get(i).getPlayerId();
+
+                        gameInfo.updateGamePlayer(gamePlayerIndex, SnakesProto.NodeRole.VIEWER);
+
+                        generateRandomFoodAfterSnakeDeath(gameInfo.getSnakes().get(i));
                         gameInfo.getSnakes().remove(i);
                     }
                 }
             }
         }
+    }
+
+    /**
+     * @return количество живых змей в игре
+     */
+    private int getAliveSnakesCount() {
+        int total = 0;
+
+        for (SnakesProto.GameState.Snake snake : gameInfo.getSnakes()) {
+            if (snake.getState().equals(SnakesProto.GameState.Snake.SnakeState.ALIVE)) {
+                total++;
+            }
+        }
+        return total;
+    }
+
+    /**
+     * Генерация еды с вероятностью 0,5 в месте погибшей змейки.
+     *
+     * @param snake погибшая змейка
+     */
+    private void generateRandomFoodAfterSnakeDeath(SnakesProto.GameState.Snake snake) {
+        List<Integer> snakeCoords = new ArrayList<>();
+
+        for (SnakesProto.GameState.Coord coord : snake.getPointsList()) {
+            snakeCoords.add(coord.getY() * gameInfo.getWidth() + coord.getY());
+        }
+
+        foodService.generateFoodFromList(snakeCoords);
     }
 }
 

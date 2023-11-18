@@ -58,9 +58,9 @@ public class MasterController {
         gameInfo.setWidth(gameRequest.getWidth());
         gameInfo.setNodeRole(SnakesProto.NodeRole.MASTER);
 
-        foodService.generateFood();
         int id = connectionService.createNewGamePlayer(gameRequest.getUsername(), SnakesProto.NodeRole.MASTER);
-
+        gameInfo.setPlayerId(id);
+        
         SnakesProto.GameState.Coord[] coords = connectionService.searchPlace();
         connectionService.createNewSnake(coords, id);
 

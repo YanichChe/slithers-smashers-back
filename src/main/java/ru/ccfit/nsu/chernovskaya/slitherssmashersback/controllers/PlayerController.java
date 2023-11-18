@@ -44,7 +44,8 @@ public class PlayerController {
      */
     @GetMapping("/game-state")
     public ResponseEntity<GameStateMsg> getGameState() {
-        SnakesProto.GamePlayer gamePlayer = gameInfo.getGamePlayers().get(gameInfo.findPlayerIndexById(gameInfo.getPlayerId()));
+        SnakesProto.GamePlayer gamePlayer = gameInfo.getGamePlayers()
+                .get(gameInfo.findPlayerIndexById(gameInfo.getPlayerId()));
         GameStateMsg gameStateMsg = new GameStateMsg(gameInfo.getGamePlayers(),
                 gameInfo.getSnakes(),
                 gameInfo.getFoods(),
