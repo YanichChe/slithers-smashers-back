@@ -10,6 +10,7 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.GameS
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto.Steer;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GamesInfo;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.GameInfoService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.MasterService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.UnicastMessageService;
 
@@ -17,7 +18,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 @RestController
@@ -26,14 +26,16 @@ import java.util.List;
 public class PlayerController {
 
     private final GameInfo gameInfo;
+    private final GameInfoService gameInfoService;
     private final GamesInfo gamesInfo;
     private final UnicastMessageService unicastMessageService;
     private final MasterService masterService;
 
     @Autowired
-    public PlayerController(GameInfo gameInfo, GamesInfo gamesInfo, UnicastMessageService unicastMessageService,
+    public PlayerController(GameInfo gameInfo, GameInfoService gameInfoService, GamesInfo gamesInfo, UnicastMessageService unicastMessageService,
                             MasterService masterService) {
         this.gameInfo = gameInfo;
+        this.gameInfoService = gameInfoService;
         this.gamesInfo = gamesInfo;
         this.unicastMessageService = unicastMessageService;
         this.masterService = masterService;
@@ -45,7 +47,7 @@ public class PlayerController {
     @GetMapping("/game-state")
     public ResponseEntity<GameStateMsg> getGameState() {
         SnakesProto.GamePlayer gamePlayer = gameInfo.getGamePlayers()
-                .get(gameInfo.findPlayerIndexById(gameInfo.getPlayerId()));
+                .get(gameInfoService.findPlayerIndexById(gameInfo.getPlayerId()));
         GameStateMsg gameStateMsg = new GameStateMsg(gameInfo.getGamePlayers(),
                 gameInfo.getSnakes(),
                 gameInfo.getFoods(),

@@ -1,6 +1,7 @@
 package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services;
 
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -17,10 +18,13 @@ import java.util.Set;
 public class GameControlService {
 
     private final GameInfo gameInfo;
+    private final GameInfoService gameInfoService;
     private final FoodService foodService;
 
-    public GameControlService(GameInfo gameInfo, FoodService foodService) {
+    @Autowired
+    public GameControlService(GameInfo gameInfo, GameInfoService gameInfoService, FoodService foodService) {
         this.gameInfo = gameInfo;
+        this.gameInfoService = gameInfoService;
         this.foodService = foodService;
     }
 
@@ -43,7 +47,8 @@ public class GameControlService {
     @Scheduled(fixedDelay = 1000)
     @Async
     public void gameStep() {
-        if (gameInfo.getSnakes() != null) {
+        if (gameInfo.getSnakes() != null && gameInfo.getNodeRole() != null
+                && gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
             for (int i = 0; i < gameInfo.getSnakes().size(); i++) {
 
                 SnakesProto.GameState.Snake snake = gameInfo.getSnakes().get(i);
@@ -114,7 +119,7 @@ public class GameControlService {
             for (int x : foodCoords) {
                 if (snake.getPoints(0).getY() * gameInfo.getWidth() +
                         snake.getPoints(0).getX() == x) {
-                    int indexPlayer = gameInfo.findPlayerIndexById(snake.getPlayerId());
+                    int indexPlayer = gameInfoService.findPlayerIndexById(snake.getPlayerId());
                     SnakesProto.GamePlayer gamePlayer = gameInfo.getGamePlayers().get(indexPlayer);
 
                     SnakesProto.GamePlayer.Builder modifiedPlayerGameBuilder = gamePlayer.toBuilder();
@@ -123,7 +128,7 @@ public class GameControlService {
                     gameInfo.getGamePlayers().remove(indexPlayer);
                     gameInfo.getGamePlayers().add(indexPlayer, modifiedPlayerGameBuilder.build());
 
-                    int index = gameInfo.findFoodIndexByInt(x);
+                    int index = gameInfoService.findFoodIndexByInt(x);
                     gameInfo.getFoods().remove(index);
 
                     log.debug(modifiedPlayerGameBuilder.getScore());
@@ -154,32 +159,14 @@ public class GameControlService {
                     for (int k = 0; k < snakesCoords.get(j).size(); k++) {
                         if (snakesCoords.get(i).get(0) == snakesCoords.get(j).get(k)) {
                             if (k != 0) {
-                                gameInfo.setAlive(false);
-                                int gamePlayerIndex = gameInfo.getSnakes().get(i).getPlayerId();
+                                int gamePlayerIndex = gameInfo.getSnakes().get(j).getPlayerId();
+                                gameInfoService.addPointToGamePlayer(gamePlayerIndex);
 
-                                gameInfo.updateGamePlayer(gamePlayerIndex, SnakesProto.NodeRole.VIEWER);
+                                gameInfoService.killSnake(i);
 
-                                SnakesProto.GameState.Snake copySnake = gameInfo.getSnakes().get(i);
-                                gameInfo.getSnakes().remove(i);
-                                generateRandomFoodAfterSnakeDeath(copySnake);
                             } else {
-                                //случай когда врезались две головы
-                                gameInfo.setAlive(false);
-
-                                int gamePlayerIndex = gameInfo.getSnakes().get(i).getPlayerId();
-                                gameInfo.updateGamePlayer(gamePlayerIndex, SnakesProto.NodeRole.VIEWER);
-
-                                int gamePlayerIndex_ = gameInfo.getSnakes().get(j).getPlayerId();
-                                gameInfo.updateGamePlayer(gamePlayerIndex_, SnakesProto.NodeRole.VIEWER);
-
-                                SnakesProto.GameState.Snake copySnake = gameInfo.getSnakes().get(i);
-                                SnakesProto.GameState.Snake copySnake_ = gameInfo.getSnakes().get(j);
-
-                                gameInfo.getSnakes().remove(i);
-                                gameInfo.getSnakes().remove(j);
-
-                                generateRandomFoodAfterSnakeDeath(copySnake);
-                                generateRandomFoodAfterSnakeDeath(copySnake_);
+                                gameInfoService.killSnake(i);
+                                gameInfoService.killSnake(j);
                             }
                         }
                     }
@@ -194,18 +181,7 @@ public class GameControlService {
                     });
 
                     if (!duplicates.isEmpty()) {
-                        gameInfo.setAlive(false);
-
-                        log.info("Snake died cause: itself " + gameInfo.getSnakes().get(i));
-
-                        int gamePlayerIndex = gameInfo.getSnakes().get(i).getPlayerId();
-
-                        gameInfo.updateGamePlayer(gamePlayerIndex, SnakesProto.NodeRole.VIEWER);
-
-                        SnakesProto.GameState.Snake copySnake = gameInfo.getSnakes().get(i);
-                        gameInfo.getSnakes().remove(i);
-                        generateRandomFoodAfterSnakeDeath(copySnake);
-
+                        gameInfoService.killSnake(i);
                     }
                 }
             }
@@ -224,21 +200,6 @@ public class GameControlService {
             }
         }
         return total;
-    }
-
-    /**
-     * Генерация еды с вероятностью 0,5 в месте погибшей змейки.
-     *
-     * @param snake погибшая змейка
-     */
-    private void generateRandomFoodAfterSnakeDeath(SnakesProto.GameState.Snake snake) {
-        List<Integer> snakeCoords = new ArrayList<>();
-
-        for (SnakesProto.GameState.Coord coord : snake.getPointsList()) {
-            snakeCoords.add(coord.getY() * gameInfo.getWidth() + coord.getX());
-        }
-
-        foodService.generateFoodFromList(snakeCoords);
     }
 }
 

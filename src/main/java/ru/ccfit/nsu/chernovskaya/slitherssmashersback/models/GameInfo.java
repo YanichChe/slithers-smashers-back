@@ -41,37 +41,4 @@ public class GameInfo {
         msqSeq++;
         return msqSeq;
     }
-
-    public int findPlayerIndexById(long id) {
-        for (int i = 0; i < gamePlayers.size(); i++) {
-            if (gamePlayers.get(i).getId() == id) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    public int findFoodIndexByInt(int coord) {
-        for (int i = 0; i < foods.size(); i++) {
-            SnakesProto.GameState.Coord food = foods.get(i);
-            if (food.getY() * width + food.getX() == coord) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    /**
-     * @param index индекс игрока
-     * @param nodeRole тип игрока
-     */
-    public void updateGamePlayer(int index, SnakesProto.NodeRole nodeRole) {
-        SnakesProto.GamePlayer updatedGamePlayer =
-                gamePlayers.get(index)
-                        .toBuilder()
-                        .setRole(nodeRole)
-                        .build();
-
-        gamePlayers.add(index, updatedGamePlayer);
-    }
 }

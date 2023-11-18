@@ -39,7 +39,7 @@ public class MulticastSenderService {
      * сообщение с существованием игры на мультикаст адрес.
      */
     @Async
-    @Scheduled(fixedRateString = "${multicast.sender.period}")
+    @Scheduled(fixedRate = 1000)
     public void sendAnnouncementMsgPeriodic() {
         if (gameInfo.getGameConfig() != null && gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
 
