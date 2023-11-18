@@ -20,7 +20,6 @@ import java.util.Arrays;
 @Service
 @Log4j2
 public class MulticastReceiverService {
-    private final GameInfo gameInfo;
     private final GamesInfo gamesInfo;
     @Value("${multicast.sender.address}")
     String groupAddress;
@@ -28,8 +27,7 @@ public class MulticastReceiverService {
     @Value("${multicast.sender.port}")
     int groupPort;
 
-    public MulticastReceiverService(GameInfo gameInfo, GamesInfo gamesInfo) {
-        this.gameInfo = gameInfo;
+    public MulticastReceiverService(GamesInfo gamesInfo) {
         this.gamesInfo = gamesInfo;
     }
 
