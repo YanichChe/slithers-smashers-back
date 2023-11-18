@@ -18,23 +18,22 @@ public class MasterController {
 
     private final GameInfo gameInfo;
     private final ConnectionService connectionService;
-    private final FoodService foodService;
-
     @Value(value = "${state.delay.ms}")
     private int stateDelayMs;
 
     @Autowired
-    public MasterController(GameInfo gameInfo, ConnectionService connectionService, FoodService foodService) {
+    public MasterController(GameInfo gameInfo, ConnectionService connectionService) {
         this.gameInfo = gameInfo;
         this.connectionService = connectionService;
-        this.foodService = foodService;
     }
 
     /**
      * Инициализация запуска игры.
      * 1. Принимает config игры
-     * 2. заполняет поля game info
-     * 3. Создает игрока с ролью мастер и назначает ему змейку
+     * 2. Заполняет поля game info
+     * 3. Устанавливает id
+     * 4. Находит свободные координаты для змейки
+     * 5. Создает новую змейку
      *
      * @param gameRequest параметры игры.
      * @return ответ о успехе запуска игры
