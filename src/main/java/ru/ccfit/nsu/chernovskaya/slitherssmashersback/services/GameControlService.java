@@ -159,7 +159,9 @@ public class GameControlService {
 
                                 gameInfo.updateGamePlayer(gamePlayerIndex, SnakesProto.NodeRole.VIEWER);
 
+                                SnakesProto.GameState.Snake copySnake = gameInfo.getSnakes().get(i);
                                 gameInfo.getSnakes().remove(i);
+                                generateRandomFoodAfterSnakeDeath(copySnake);
                             } else {
                                 //случай когда врезались две головы
                                 gameInfo.setAlive(false);
@@ -170,8 +172,14 @@ public class GameControlService {
                                 int gamePlayerIndex_ = gameInfo.getSnakes().get(j).getPlayerId();
                                 gameInfo.updateGamePlayer(gamePlayerIndex_, SnakesProto.NodeRole.VIEWER);
 
+                                SnakesProto.GameState.Snake copySnake = gameInfo.getSnakes().get(i);
+                                SnakesProto.GameState.Snake copySnake_ = gameInfo.getSnakes().get(j);
+
                                 gameInfo.getSnakes().remove(i);
                                 gameInfo.getSnakes().remove(j);
+
+                                generateRandomFoodAfterSnakeDeath(copySnake);
+                                generateRandomFoodAfterSnakeDeath(copySnake_);
                             }
                         }
                     }
@@ -194,8 +202,10 @@ public class GameControlService {
 
                         gameInfo.updateGamePlayer(gamePlayerIndex, SnakesProto.NodeRole.VIEWER);
 
-                        generateRandomFoodAfterSnakeDeath(gameInfo.getSnakes().get(i));
+                        SnakesProto.GameState.Snake copySnake = gameInfo.getSnakes().get(i);
                         gameInfo.getSnakes().remove(i);
+                        generateRandomFoodAfterSnakeDeath(copySnake);
+
                     }
                 }
             }
@@ -225,7 +235,7 @@ public class GameControlService {
         List<Integer> snakeCoords = new ArrayList<>();
 
         for (SnakesProto.GameState.Coord coord : snake.getPointsList()) {
-            snakeCoords.add(coord.getY() * gameInfo.getWidth() + coord.getY());
+            snakeCoords.add(coord.getY() * gameInfo.getWidth() + coord.getX());
         }
 
         foodService.generateFoodFromList(snakeCoords);
