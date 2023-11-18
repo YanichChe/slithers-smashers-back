@@ -59,10 +59,12 @@ public class MasterController {
 
         int id = connectionService.createNewGamePlayer(gameRequest.getUsername(), SnakesProto.NodeRole.MASTER);
         gameInfo.setPlayerId(id);
-        
-        SnakesProto.GameState.Coord[] coords = connectionService.searchPlace();
-        connectionService.createNewSnake(coords, id);
 
+        if (gameRequest.getHaveSnake() == 1) {
+            SnakesProto.GameState.Coord[] coords = connectionService.searchPlace();
+            connectionService.createNewSnake(coords, id);
+
+        }
 
         log.info("Game config " + gameConfig.toString());
         return ResponseEntity.ok("start game");

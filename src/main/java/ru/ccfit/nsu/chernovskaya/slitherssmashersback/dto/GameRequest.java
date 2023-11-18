@@ -9,4 +9,9 @@ public class GameRequest {
     private int foodStatic;
     private String gameName;
     private String username;
+    private int haveSnake;
+
+    public int getNodeRole() {
+        return haveSnake;
+    }
 }
