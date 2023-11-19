@@ -38,11 +38,10 @@ public class MulticastSenderService {
      * Если была создана игра и текущая роль - мастер, то рассылается
      * сообщение с существованием игры на мультикаст адрес.
      */
+    @Scheduled(fixedDelay = 1000)
     @Async
-    @Scheduled(fixedRate = 1000)
     public void sendAnnouncementMsgPeriodic() {
         if (gameInfo.getGameConfig() != null && gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
-
             try (DatagramSocket socket = new DatagramSocket()) {
                 try {
                     SnakesProto.GameMessage gameMessage = masterService.generateAnnouncementMessage();
@@ -50,6 +49,7 @@ public class MulticastSenderService {
 
                     DatagramPacket packet = new DatagramPacket(buf, buf.length,
                             InetAddress.getByName(groupAddress), groupPort);
+                    log.info(packet);
                     socket.send(packet);
 
                 } catch (IOException e) {
