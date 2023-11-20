@@ -12,10 +12,10 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto.GameAnnouncementDTO;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto.Steer;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GamesInfo;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.GameInfoService;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.GamesInfoService;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.MasterService;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.UnicastMessageService;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.info.GameInfoService;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.info.GamesInfoService;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.MasterService;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.casts.UnicastMessageService;
 
 import java.io.IOException;
 import java.net.InetAddress;

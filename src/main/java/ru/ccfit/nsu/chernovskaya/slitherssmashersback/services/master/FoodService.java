@@ -1,4 +1,4 @@
-package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services;
+package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master;
 
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;

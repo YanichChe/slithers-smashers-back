@@ -1,4 +1,4 @@
-package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services;
+package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.casts;
 
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.Level;
@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.MasterService;
 
 import java.io.IOException;
 import java.net.DatagramPacket;

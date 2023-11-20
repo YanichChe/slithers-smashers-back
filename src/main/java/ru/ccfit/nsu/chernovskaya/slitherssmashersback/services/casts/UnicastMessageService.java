@@ -1,4 +1,4 @@
-package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services;
+package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.casts;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -11,6 +11,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.GameControlService;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.MasterService;
 
 import java.io.IOException;
 import java.net.*;

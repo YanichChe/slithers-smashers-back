@@ -1,9 +1,10 @@
-package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services;
+package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.info;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.FoodService;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services;
+package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.casts;
 
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.Level;

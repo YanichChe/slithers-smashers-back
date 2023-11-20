@@ -8,8 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto.GameRequest;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.ConnectionService;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.FoodService;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.ConnectionService;
 
 @RestController
 @RequestMapping("/master")

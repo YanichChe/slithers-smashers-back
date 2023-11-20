@@ -1,4 +1,4 @@
-package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services;
+package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master;
 
 import com.google.protobuf.ByteString;
 import lombok.extern.log4j.Log4j2;
