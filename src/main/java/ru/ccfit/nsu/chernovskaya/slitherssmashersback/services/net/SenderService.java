@@ -1,5 +1,6 @@
 package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.net;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.log4j.Log4j2;
@@ -21,7 +22,7 @@ import java.util.Arrays;
 
 @Service
 @Log4j2
-public class Sender {
+public class SenderService {
 
     private long receivedAck = -1;
 
@@ -40,8 +41,8 @@ public class Sender {
     private final GameControlService gameControlService;
     private final MasterService masterService;
 
-    public Sender(GameInfo gameInfo, GameControlService gameControlService,
-                  MasterService masterService) {
+    public SenderService(GameInfo gameInfo, GameControlService gameControlService,
+                         MasterService masterService) {
         this.gameInfo = gameInfo;
         this.gameControlService = gameControlService;
         this.masterService = masterService;
@@ -71,8 +72,9 @@ public class Sender {
             DatagramPacket packet = new DatagramPacket(buf, buf.length,
                     inetAddress, port);
             datagramSocket.send(packet);
-            log.info(inetAddress.getHostAddress());
+            log.info("send packet " + packet);
         } catch (IOException e) {
+           // log.info(e.getMessage());
         }
     }
 
@@ -83,18 +85,21 @@ public class Sender {
      */
     @Async
     @EventListener(ApplicationReadyEvent.class)
-    public void receiveMessageTask() throws IOException {
+    public void receiveMessageTask() throws InvalidProtocolBufferException {
 
         byte[] buf = new byte[2048];
 
         while (true) {
             DatagramPacket packet = new DatagramPacket(buf, 0, buf.length);
-            datagramSocket.receive(packet);
-            log.info(packet);
+            try {
+                datagramSocket.receive(packet);
+            } catch (IOException e) {
+                log.error(e);
+            }
+
             var data = Arrays.copyOfRange(packet.getData(), 0, packet.getLength());
             SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage.parseFrom(data);
 
-            log.info(gameMessage);
             if (gameMessage.hasState()) {
                 gameControlService.updateState(gameMessage.getState());
             } else if (gameMessage.hasDiscover() & gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
@@ -192,9 +197,8 @@ public class Sender {
      */
     @Scheduled(fixedDelay = 1000)
     @Async
-    public void sendAnnouncementMsgPeriodic() {
+    public void sendAnnouncementMsgPeriodic() throws IOException {
         if (gameInfo.getGameConfig() != null && gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
-            try (DatagramSocket socket = new DatagramSocket()) {
 
                 SnakesProto.GameMessage gameMessage = masterService.generateAnnouncementMessage();
                 byte[] buf = gameMessage.toByteArray();
@@ -202,11 +206,7 @@ public class Sender {
                 DatagramPacket packet = new DatagramPacket(buf, buf.length,
                         InetAddress.getByName(groupAddress), groupPort);
 
-                socket.send(packet);
-
-            } catch (IOException e) {
-                log.atLevel(Level.ERROR).log(e.getMessage());
-            }
+                datagramSocket.send(packet);
         }
     }
 }

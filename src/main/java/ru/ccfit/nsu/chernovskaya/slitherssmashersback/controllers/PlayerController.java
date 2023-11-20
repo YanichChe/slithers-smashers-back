@@ -15,7 +15,7 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GamesInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.info.GameInfoService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.info.GamesInfoService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.MasterService;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.net.Sender;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.net.SenderService;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -32,11 +32,11 @@ public class PlayerController {
     private final GameInfoService gameInfoService;
     private final GamesInfo gamesInfo;
     private final GamesInfoService gamesInfoService;
-    private final Sender sender;
+    private final SenderService sender;
     private final MasterService masterService;
 
     @Autowired
-    public PlayerController(GameInfo gameInfo, GameInfoService gameInfoService, GamesInfo gamesInfo, GamesInfoService gamesInfoService, Sender sender,
+    public PlayerController(GameInfo gameInfo, GameInfoService gameInfoService, GamesInfo gamesInfo, GamesInfoService gamesInfoService, SenderService sender,
                             MasterService masterService) {
         this.gameInfo = gameInfo;
         this.gameInfoService = gameInfoService;
@@ -155,20 +155,15 @@ public class PlayerController {
 
         GameAnnouncementDTO gameAnnouncement = gamesInfoService.getAnnouncementDTOByName(joinMsgRequest.getGameName());
 
-        try {
-            sender.sendMessage(gameMessage, InetAddress.getByName(gameAnnouncement.getMasterAddress()),
-                    gameAnnouncement.getMasterPort());
-            log.info(gameAnnouncement.getMasterAddress());
-        } catch (IOException e) {
-            return ResponseEntity.status(504).body("io error");
-        }
+        sender.sendMessage(gameMessage, gameAnnouncement.getMasterAddress(),
+                gameAnnouncement.getMasterPort());
 
         /*int error = unicastMessageService.waitAck(gameInfo.getMsqSeq(), gameMessage);
         if (error == 0) {
             return ResponseEntity.ok("not found place");
         }*/
 
-        gameInfo.setMasterInetAddress(gameAnnouncement.getMasterAddress());
+        gameInfo.setMasterInetAddress(String.valueOf(gameAnnouncement.getMasterAddress()));
         gameInfo.setMasterPort(gameAnnouncement.getMasterPort());
 
         gameInfo.setNodeRole(SnakesProto.NodeRole.NORMAL);

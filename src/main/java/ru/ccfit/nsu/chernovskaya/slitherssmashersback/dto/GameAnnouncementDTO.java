@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 
+import java.net.InetAddress;
+
 @AllArgsConstructor
 @Getter
 @Setter
@@ -12,6 +14,6 @@ public class GameAnnouncementDTO {
     private SnakesProto.GameConfig config;
     private boolean canJoin;
     private String gameName;
-    private String masterAddress;
+    private InetAddress masterAddress;
     private int masterPort;
 }

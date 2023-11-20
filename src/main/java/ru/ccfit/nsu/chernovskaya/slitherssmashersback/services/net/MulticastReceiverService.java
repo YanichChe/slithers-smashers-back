@@ -51,12 +51,13 @@ public class MulticastReceiverService {
                 var data = Arrays.copyOfRange(packet.getData(), 0, packet.getLength());
                 SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage.parseFrom(data);
 
+                log.info(packet.getAddress().getHostAddress() + " " + packet.getPort());
                 if (gameMessage.hasAnnouncement()) {
                     GameAnnouncementDTO gameAnnouncementDTO = new GameAnnouncementDTO(
                             gameMessage.getAnnouncement().getGames(0).getConfig(),
                             gameMessage.getAnnouncement().getGames(0).getCanJoin(),
                             gameMessage.getAnnouncement().getGames(0).getGameName(),
-                            packet.getAddress().getHostAddress(),
+                            packet.getAddress(),
                             packet.getPort()
                     );
                     gamesInfo.getGameAnnouncementList().add(gameAnnouncementDTO);
