@@ -61,10 +61,10 @@ public class UnicastMessageService {
         try {
             byte[] buf = gameMessage.toByteArray();
 
-            DatagramPacket packet = new DatagramPacket(buf, 0, buf.length,
+            DatagramPacket packet = new DatagramPacket(buf, buf.length,
                     inetAddress, port);
             datagramSocket.send(packet);
-            log.info(inetAddress);
+            log.info(inetAddress.getHostAddress());
         } catch (IOException e) {
         }
     }
@@ -83,7 +83,7 @@ public class UnicastMessageService {
         while (true) {
             DatagramPacket packet = new DatagramPacket(buf, 0, buf.length);
             datagramSocket.receive(packet);
-
+            log.info(packet);
             var data = Arrays.copyOfRange(packet.getData(), 0, packet.getLength());
             SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage.parseFrom(data);
 
