@@ -6,7 +6,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.stereotype.Component;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto.GameAnnouncementDTO;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @AllArgsConstructor
@@ -15,14 +17,5 @@ import java.util.List;
 @Setter
 @Component
 public class GamesInfo {
-    List<SnakesProto.GameAnnouncement> gameAnnouncementList;
-
-    public SnakesProto.GameAnnouncement getAnnouncementByName(String gameName) {
-        for (SnakesProto.GameAnnouncement gameAnnouncement: gameAnnouncementList) {
-            if (gameAnnouncement.getGameName().equals(gameName))
-                return gameAnnouncement;
-        }
-
-        return null;
-    }
+    List<GameAnnouncementDTO> gameAnnouncementList = new ArrayList<>();
 }

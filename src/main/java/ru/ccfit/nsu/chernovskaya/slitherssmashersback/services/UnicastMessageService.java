@@ -3,7 +3,6 @@ package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.log4j.Log4j2;
-import org.apache.logging.log4j.Level;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -55,18 +54,16 @@ public class UnicastMessageService {
      * @param gameMessage сообщение
      * @param inetAddress адрес получателя
      * @param port        порт получателя
-     * @return состояние по ошибке
      */
-    public int sendMessage(SnakesProto.GameMessage gameMessage, InetAddress inetAddress, int port) {
+    public void sendMessage(SnakesProto.GameMessage gameMessage, InetAddress inetAddress, int port) {
         try {
             byte[] buf = gameMessage.toByteArray();
 
             DatagramPacket packet = new DatagramPacket(buf, 0, buf.length,
                     inetAddress, port);
             datagramSocket.send(packet);
-            return 0;
+            log.info(inetAddress);
         } catch (IOException e) {
-            return 1;
         }
     }
 
@@ -88,14 +85,13 @@ public class UnicastMessageService {
             var data = Arrays.copyOfRange(packet.getData(), 0, packet.getLength());
             SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage.parseFrom(data);
 
-            log.error(gameMessage);
+            log.info(gameMessage);
             if (gameMessage.hasState()) {
                 gameControlService.updateState(gameMessage.getState());
             } else if (gameMessage.hasDiscover() & gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
                 SnakesProto.GameMessage gameMessageNew = masterService.generateAnnouncementMessage();
                 sendMessage(gameMessageNew, packet.getAddress(), packet.getPort());
             } else if (gameMessage.hasJoin()) {
-
                 SnakesProto.GameMessage gameMessageNew =
                         masterService.joinHandler(gameMessage.getJoin().getPlayerName(),
                                 String.valueOf(packet.getAddress()), packet.getPort());

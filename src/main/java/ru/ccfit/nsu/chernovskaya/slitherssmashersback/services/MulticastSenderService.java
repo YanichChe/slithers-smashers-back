@@ -43,18 +43,14 @@ public class MulticastSenderService {
     public void sendAnnouncementMsgPeriodic() {
         if (gameInfo.getGameConfig() != null && gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
             try (DatagramSocket socket = new DatagramSocket()) {
-                try {
-                    SnakesProto.GameMessage gameMessage = masterService.generateAnnouncementMessage();
-                    byte[] buf = gameMessage.toByteArray();
 
-                    DatagramPacket packet = new DatagramPacket(buf, buf.length,
-                            InetAddress.getByName(groupAddress), groupPort);
-                    log.info(packet);
-                    socket.send(packet);
+                SnakesProto.GameMessage gameMessage = masterService.generateAnnouncementMessage();
+                byte[] buf = gameMessage.toByteArray();
 
-                } catch (IOException e) {
-                    socket.close();
-                }
+                DatagramPacket packet = new DatagramPacket(buf, buf.length,
+                        InetAddress.getByName(groupAddress), groupPort);
+
+                socket.send(packet);
 
             } catch (IOException e) {
                 log.atLevel(Level.ERROR).log(e.getMessage());

@@ -7,10 +7,13 @@ import org.springframework.web.bind.annotation.*;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.GamesListMsg;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.GameStateMsg;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.JoinMsg;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto.GameAnnouncementDTO;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto.Steer;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GamesInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.GameInfoService;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.GamesInfoService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.MasterService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.UnicastMessageService;
 
@@ -28,15 +31,17 @@ public class PlayerController {
     private final GameInfo gameInfo;
     private final GameInfoService gameInfoService;
     private final GamesInfo gamesInfo;
+    private final GamesInfoService gamesInfoService;
     private final UnicastMessageService unicastMessageService;
     private final MasterService masterService;
 
     @Autowired
-    public PlayerController(GameInfo gameInfo, GameInfoService gameInfoService, GamesInfo gamesInfo, UnicastMessageService unicastMessageService,
+    public PlayerController(GameInfo gameInfo, GameInfoService gameInfoService, GamesInfo gamesInfo, GamesInfoService gamesInfoService, UnicastMessageService unicastMessageService,
                             MasterService masterService) {
         this.gameInfo = gameInfo;
         this.gameInfoService = gameInfoService;
         this.gamesInfo = gamesInfo;
+        this.gamesInfoService = gamesInfoService;
         this.unicastMessageService = unicastMessageService;
         this.masterService = masterService;
     }
@@ -114,8 +119,8 @@ public class PlayerController {
     public ResponseEntity<GamesListMsg> getGamesList() {
 
         List<String> gameNames = new ArrayList<>();
-        for (SnakesProto.GameAnnouncement gameAnnouncement : gamesInfo.getGameAnnouncementList()) {
-            if (gameAnnouncement.getCanJoin()) {
+        for (GameAnnouncementDTO gameAnnouncement : gamesInfo.getGameAnnouncementList()) {
+            if (gameAnnouncement.isCanJoin()) {
                 gameNames.add(gameAnnouncement.getGameName());
             }
         }
@@ -128,17 +133,16 @@ public class PlayerController {
     /**
      * Запрос на подключение к игре
      *
-     * @param gameName название игры, к которой хотят присоединиться
+     * @param joinMsgRequest данные запроса на подключения.
      * @return сообщение об успехе присоединения.
      */
     @PostMapping("/join")
-    public ResponseEntity<String> sendJoinMessage(@RequestBody String gameName)
-            throws UnknownHostException, InterruptedException {
+    public ResponseEntity<String> sendJoinMessage(@RequestBody JoinMsg joinMsgRequest) {
 
         SnakesProto.GameMessage.JoinMsg joinMsg = SnakesProto.GameMessage.JoinMsg
                 .newBuilder()
-                .setPlayerName(gameInfo.getPlayerName())
-                .setGameName(gameName)
+                .setPlayerName(joinMsgRequest.getPlayerName())
+                .setGameName(joinMsgRequest.getGameName())
                 .setRequestedRole(SnakesProto.NodeRole.NORMAL)
                 .build();
 
@@ -149,23 +153,27 @@ public class PlayerController {
                 .setReceiverId(0)
                 .build();
 
+        GameAnnouncementDTO gameAnnouncement = gamesInfoService.getAnnouncementDTOByName(joinMsgRequest.getGameName());
+
         try {
-            unicastMessageService.sendMessage(gameMessage, InetAddress.getByName(gameInfo.getMasterInetAddress()),
-                    gameInfo.getMasterPort());
+            unicastMessageService.sendMessage(gameMessage, InetAddress.getByName(gameAnnouncement.getMasterAddress()),
+                    gameAnnouncement.getMasterPort());
+            log.info(gameAnnouncement.getMasterAddress());
         } catch (IOException e) {
             return ResponseEntity.status(504).body("io error");
         }
 
-        int error = unicastMessageService.waitAck(gameInfo.getMsqSeq(), gameMessage);
+        /*int error = unicastMessageService.waitAck(gameInfo.getMsqSeq(), gameMessage);
         if (error == 0) {
             return ResponseEntity.ok("not found place");
-        }
+        }*/
 
-        SnakesProto.GameAnnouncement gameAnnouncement = gamesInfo.getAnnouncementByName(gameName);
+        gameInfo.setMasterInetAddress(gameAnnouncement.getMasterAddress());
+        gameInfo.setMasterPort(gameAnnouncement.getMasterPort());
 
-        gameInfo.getGamePlayers().addAll(gameAnnouncement.getPlayers().getPlayersList());
+        gameInfo.setNodeRole(SnakesProto.NodeRole.NORMAL);
         gameInfo.setGameConfig(gameAnnouncement.getConfig());
-        gameInfo.setCanJoin(gameAnnouncement.getCanJoin());
+        gameInfo.setCanJoin(gameAnnouncement.isCanJoin());
         gameInfo.setGameName(gameAnnouncement.getGameName());
         gameInfo.setAlive(true);
 

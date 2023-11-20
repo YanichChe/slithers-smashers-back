@@ -8,13 +8,12 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto.GameAnnouncementDTO;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GamesInfo;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
+import java.net.*;
 import java.util.Arrays;
 
 @Service
@@ -43,7 +42,8 @@ public class MulticastReceiverService {
 
             byte[] buf = new byte[2048];
 
-            socket.joinGroup(InetAddress.getByName(groupAddress));
+            socket.joinGroup(new InetSocketAddress(groupAddress, groupPort),
+                    NetworkInterface.getByInetAddress(InetAddress.getByName(groupAddress)));
 
             while (true) {
                 DatagramPacket packet = new DatagramPacket(buf, 0, buf.length);
@@ -52,10 +52,15 @@ public class MulticastReceiverService {
                 var data = Arrays.copyOfRange(packet.getData(), 0, packet.getLength());
                 SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage.parseFrom(data);
 
-                log.debug(gameMessage);
-
                 if (gameMessage.hasAnnouncement()) {
-                    gamesInfo.setGameAnnouncementList(gameMessage.getAnnouncement().getGamesList());
+                    GameAnnouncementDTO gameAnnouncementDTO = new GameAnnouncementDTO(
+                            gameMessage.getAnnouncement().getGames(0).getConfig(),
+                            gameMessage.getAnnouncement().getGames(0).getCanJoin(),
+                            gameMessage.getAnnouncement().getGames(0).getGameName(),
+                            packet.getAddress().getHostAddress(),
+                            packet.getPort()
+                    );
+                    gamesInfo.getGameAnnouncementList().add(gameAnnouncementDTO);
                 }
             }
 
