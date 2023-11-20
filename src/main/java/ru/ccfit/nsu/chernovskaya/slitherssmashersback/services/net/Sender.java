@@ -1,8 +1,9 @@
-package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.casts;
+package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.net;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.log4j.Log4j2;
+import org.apache.logging.log4j.Level;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -20,12 +21,18 @@ import java.util.Arrays;
 
 @Service
 @Log4j2
-public class UnicastMessageService {
+public class Sender {
 
     private long receivedAck = -1;
 
     @Value("${state.delay.ms}")
     private long stateDelayMs;
+
+    @Value("${multicast.sender.address}")
+    String groupAddress;
+
+    @Value("${multicast.sender.port}")
+    int groupPort;
 
     private DatagramSocket datagramSocket;
 
@@ -33,8 +40,8 @@ public class UnicastMessageService {
     private final GameControlService gameControlService;
     private final MasterService masterService;
 
-    public UnicastMessageService(GameInfo gameInfo, GameControlService gameControlService,
-                                 MasterService masterService) {
+    public Sender(GameInfo gameInfo, GameControlService gameControlService,
+                  MasterService masterService) {
         this.gameInfo = gameInfo;
         this.gameControlService = gameControlService;
         this.masterService = masterService;
@@ -176,5 +183,30 @@ public class UnicastMessageService {
             wait(stateDelayMs / 10);
         }
         return 0;
+    }
+
+    /**
+     * Задача которая выполняется раз в ${multicast.sender.period}.
+     * Если была создана игра и текущая роль - мастер, то рассылается
+     * сообщение с существованием игры на мультикаст адрес.
+     */
+    @Scheduled(fixedDelay = 1000)
+    @Async
+    public void sendAnnouncementMsgPeriodic() {
+        if (gameInfo.getGameConfig() != null && gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
+            try (DatagramSocket socket = new DatagramSocket()) {
+
+                SnakesProto.GameMessage gameMessage = masterService.generateAnnouncementMessage();
+                byte[] buf = gameMessage.toByteArray();
+
+                DatagramPacket packet = new DatagramPacket(buf, buf.length,
+                        InetAddress.getByName(groupAddress), groupPort);
+
+                socket.send(packet);
+
+            } catch (IOException e) {
+                log.atLevel(Level.ERROR).log(e.getMessage());
+            }
+        }
     }
 }

@@ -15,7 +15,7 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GamesInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.info.GameInfoService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.info.GamesInfoService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.MasterService;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.casts.UnicastMessageService;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.net.Sender;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -32,17 +32,17 @@ public class PlayerController {
     private final GameInfoService gameInfoService;
     private final GamesInfo gamesInfo;
     private final GamesInfoService gamesInfoService;
-    private final UnicastMessageService unicastMessageService;
+    private final Sender sender;
     private final MasterService masterService;
 
     @Autowired
-    public PlayerController(GameInfo gameInfo, GameInfoService gameInfoService, GamesInfo gamesInfo, GamesInfoService gamesInfoService, UnicastMessageService unicastMessageService,
+    public PlayerController(GameInfo gameInfo, GameInfoService gameInfoService, GamesInfo gamesInfo, GamesInfoService gamesInfoService, Sender sender,
                             MasterService masterService) {
         this.gameInfo = gameInfo;
         this.gameInfoService = gameInfoService;
         this.gamesInfo = gamesInfo;
         this.gamesInfoService = gamesInfoService;
-        this.unicastMessageService = unicastMessageService;
+        this.sender = sender;
         this.masterService = masterService;
     }
 
@@ -102,9 +102,9 @@ public class PlayerController {
                     .setSenderId(gameInfo.getPlayerId())
                     .build();
 
-            unicastMessageService.sendMessage(gameMessage, InetAddress.getByName(gameInfo.getMasterInetAddress()),
+            sender.sendMessage(gameMessage, InetAddress.getByName(gameInfo.getMasterInetAddress()),
                     gameInfo.getMasterPort());
-            unicastMessageService.waitAck(gameInfo.getMsqSeq(), gameMessage);
+            sender.waitAck(gameInfo.getMsqSeq(), gameMessage);
         }
 
         return ResponseEntity.ok("update request");
@@ -156,7 +156,7 @@ public class PlayerController {
         GameAnnouncementDTO gameAnnouncement = gamesInfoService.getAnnouncementDTOByName(joinMsgRequest.getGameName());
 
         try {
-            unicastMessageService.sendMessage(gameMessage, InetAddress.getByName(gameAnnouncement.getMasterAddress()),
+            sender.sendMessage(gameMessage, InetAddress.getByName(gameAnnouncement.getMasterAddress()),
                     gameAnnouncement.getMasterPort());
             log.info(gameAnnouncement.getMasterAddress());
         } catch (IOException e) {
