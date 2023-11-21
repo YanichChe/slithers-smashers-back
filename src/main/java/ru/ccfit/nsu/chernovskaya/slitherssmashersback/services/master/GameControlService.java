@@ -8,14 +8,14 @@ import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.mapper.ProtobufMapper;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.*;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.info.GameInfoService;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.*;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.Direction.*;
+import static ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.Direction.*;
 
 @Service
 @Log4j2
@@ -23,7 +23,6 @@ import static ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.Direction.*;
 public class GameControlService {
 
     private final GameInfo gameInfo;
-    private final GameInfoService gameInfoService;
     private final FoodService foodService;
     private final ProtobufMapper mapper;
 
@@ -113,13 +112,12 @@ public class GameControlService {
             for (int x : foodCoords) {
                 if (snake.getCoordList().get(0).getY() * gameInfo.getWidth() +
                         snake.getCoordList().get(0).getX() == x) {
-                    int indexPlayer = gameInfoService.findPlayerIndexById(snake.getPlayerId());
+                    int indexPlayer = findPlayerIndexById(snake.getPlayerId());
                     GamePlayer gamePlayer = gameInfo.getGamePlayers().get(indexPlayer);
                     gamePlayer.setScore(gamePlayer.getScore() + 1);
                     gameInfo.setScore(gamePlayer.getScore() + 1);
-                    log.info(gamePlayer.getScore());
 
-                    int index = gameInfoService.findFoodIndexByInt(x);
+                    int index = findFoodIndexByInt(x);
                     gameInfo.getFoods().remove(index);
 
                     gameInfo.setIncrease(true);
@@ -150,13 +148,13 @@ public class GameControlService {
                         if (snakesCoords.get(i).get(0) == snakesCoords.get(j).get(k)) {
                             if (k != 0) {
                                 int gamePlayerIndex = gameInfo.getSnakes().get(j).getPlayerId();
-                                gameInfoService.addPointToGamePlayer(gamePlayerIndex);
+                                addPointToGamePlayer(gamePlayerIndex);
 
-                                gameInfoService.killSnake(i);
+                                killSnake(i);
 
                             } else {
-                                gameInfoService.killSnake(i);
-                                gameInfoService.killSnake(j);
+                                killSnake(i);
+                                killSnake(j);
                             }
                         }
                     }
@@ -171,7 +169,7 @@ public class GameControlService {
                     });
 
                     if (!duplicates.isEmpty()) {
-                        gameInfoService.killSnake(i);
+                        killSnake(i);
                     }
                 }
             }
@@ -191,5 +189,59 @@ public class GameControlService {
         }
         return total;
     }
+
+    private int findPlayerIndexById(long id) {
+        for (int i = 0; i < gameInfo.getGamePlayers().size(); i++) {
+            if (gameInfo.getGamePlayers().get(i).getId() == id) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private int findFoodIndexByInt(int coord) {
+        for (int i = 0; i < gameInfo.getFoods().size(); i++) {
+            Coord food = gameInfo.getFoods().get(i);
+            if (food.getY() * gameInfo.getWidth() + food.getX() == coord) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * @param index индекс игрока
+     */
+    private void addPointToGamePlayer(int index) {
+        gameInfo.getGamePlayers().get(index).setScore(gameInfo.getGamePlayers().get(index).getScore() + 1);
+    }
+
+    private void deleteGamePlayer(int index) {
+        gameInfo.getGamePlayers().remove(index);
+    }
+
+    private void killSnake(int i) {
+        int gamePlayerIndex = gameInfo.getSnakes().get(i).getPlayerId();
+        Snake copySnake = gameInfo.getSnakes().get(i);
+        gameInfo.getSnakes().remove(i);
+        generateRandomFoodAfterSnakeDeath(copySnake);
+        deleteGamePlayer(gamePlayerIndex);
+    }
+
+    /**
+     * Генерация еды с вероятностью 0,5 в месте погибшей змейки.
+     *
+     * @param snake погибшая змейка
+     */
+    private void generateRandomFoodAfterSnakeDeath(Snake snake) {
+        List<Integer> snakeCoords = new ArrayList<>();
+
+        for (Coord coord : snake.getCoordList()) {
+            snakeCoords.add(coord.getY() * gameInfo.getWidth() + coord.getX());
+        }
+
+        foodService.generateFoodFromList(snakeCoords);
+    }
 }
+
 

@@ -1,21 +1,23 @@
 package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.mapper.ProtobufMapper;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.*;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.*;
 
 @Service
 @Log4j2
+@RequiredArgsConstructor
 public class ConnectionService {
 
     private final GameInfo gameInfo;
+    private final ProtobufMapper protobufMapper;
     private int id = 0;
-    @Autowired
-    public ConnectionService(GameInfo gameInfo) {
-        this.gameInfo = gameInfo;
-    }
+
 
     /**
      * Генерация индификатора.
@@ -38,10 +40,11 @@ public class ConnectionService {
     public int createNewGamePlayer(String username, SnakesProto.NodeRole nodeRole, String ipAddress, int port) {
 
         int id = generateUniqueId();
+
         GamePlayer gamePlayer = new GamePlayer();
         gamePlayer.setName(username);
         gamePlayer.setId(id);
-        gamePlayer.setRole(Role.NORMAL);
+        gamePlayer.setRole(protobufMapper.map(nodeRole));
         gamePlayer.setAddress(ipAddress);
         gamePlayer.setPort(port);
 
@@ -59,13 +62,14 @@ public class ConnectionService {
      */
     public int createNewGamePlayer(String username, SnakesProto.NodeRole nodeRole) {
         int id = generateUniqueId();
+
         GamePlayer gamePlayer = new GamePlayer();
         gamePlayer.setName(username);
         gamePlayer.setId(id);
-        gamePlayer.setRole(Role.NORMAL);
+        gamePlayer.setRole(protobufMapper.map(nodeRole));
 
         gameInfo.getGamePlayers().add(gamePlayer);
-        log.info("New player " + gamePlayer.toString());
+        log.info("New player " + gamePlayer);
         return id;
     }
 
@@ -85,7 +89,7 @@ public class ConnectionService {
         snake.setHeadDirection(Direction.RIGHT);
 
         gameInfo.getSnakes().add(snake);
-        log.info("New snake " + snake.toString());
+        log.info("New snake " + snake);
     }
 
     /**

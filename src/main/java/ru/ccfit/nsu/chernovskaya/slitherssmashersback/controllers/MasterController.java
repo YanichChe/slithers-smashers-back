@@ -6,9 +6,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.Coord;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameConfig;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameRequest;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.Coord;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GameConfig;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.GameRequest;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.ConnectionService;
 
@@ -43,12 +43,12 @@ public class MasterController {
     public ResponseEntity<String> startGame(@RequestBody GameRequest gameRequest) {
 
         gameInfo.setAlive(true);
+
         GameConfig gameConfig = new GameConfig();
         gameConfig.setHeight(gameRequest.getHeight());
         gameConfig.setWidth(gameRequest.getWidth());
         gameConfig.setFoodStatic(gameRequest.getFoodStatic());
         gameConfig.setStateDelayMs(stateDelayMs);
-
 
         gameInfo.setGameConfig(gameConfig);
 
@@ -66,7 +66,7 @@ public class MasterController {
 
         }
 
-        log.info("Game config " + gameConfig.toString());
+        log.info("Game config " + gameConfig);
         return ResponseEntity.ok("start game");
     }
 }

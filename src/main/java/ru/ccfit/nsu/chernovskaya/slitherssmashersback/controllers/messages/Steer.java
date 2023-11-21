@@ -1,4 +1,4 @@
-package ru.ccfit.nsu.chernovskaya.slitherssmashersback.models;
+package ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

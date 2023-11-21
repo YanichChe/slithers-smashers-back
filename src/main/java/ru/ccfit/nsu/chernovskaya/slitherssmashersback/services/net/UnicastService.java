@@ -12,7 +12,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GamePlayer;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GamePlayer;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.mapper.ProtobufMapper;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.GameControlService;
@@ -70,7 +70,7 @@ public class UnicastService {
                     inetAddress, port);
             datagramSocket.send(packet);
         } catch (IOException e) {
-            //log.error(e.getMessage());
+            log.error(e.getMessage());
         }
     }
 
@@ -81,42 +81,48 @@ public class UnicastService {
      */
     @Async
     @EventListener(ApplicationReadyEvent.class)
-    public void receiveMessageTask() throws InvalidProtocolBufferException {
+    public void receiveMessageTask() throws IOException {
 
         byte[] buf = new byte[2048];
 
         while (true) {
             DatagramPacket packet = new DatagramPacket(buf, 0, buf.length);
-            try {
-                datagramSocket.receive(packet);
-            } catch (IOException e) {
-                log.error(e);
-            }
+            datagramSocket.receive(packet);
 
             var data = Arrays.copyOfRange(packet.getData(), 0, packet.getLength());
             SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage.parseFrom(data);
 
-            if (gameMessage.hasState()) {
-                gameControlService.updateState(gameMessage.getState());
-            } else if (gameMessage.hasDiscover() & gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
-                SnakesProto.GameMessage gameMessageNew = generateAnnouncementMessage();
-                sendMessage(gameMessageNew, packet.getAddress(), packet.getPort());
-            } else if (gameMessage.hasJoin()) {
-                SnakesProto.GameMessage gameMessageNew =
-                        masterService.joinHandler(gameMessage.getJoin().getPlayerName(),
-                                packet.getAddress().getHostAddress(), packet.getPort());
+            switch (gameMessage.getTypeCase()) {
+                case STATE -> gameControlService.updateState(gameMessage.getState());
 
-                sendMessage(gameMessageNew, packet.getAddress(), packet.getPort());
+                case DISCOVER -> {
+                    SnakesProto.GameMessage gameMessageNew = generateAnnouncementMessage();
+                    sendMessage(gameMessageNew, packet.getAddress(), packet.getPort());
+                }
 
-            } else if (gameMessage.hasAck()) {
-                receivedAck = gameMessage.getMsgSeq();
-                if (gameInfo.getPlayerId() == -1) gameInfo.setPlayerId(gameMessage.getReceiverId());
-            } else if (gameMessage.hasError()) {
-                receivedAck = -2;
-                gameInfo.setPlayerId(-1);
-            } else if (gameMessage.hasSteer() & gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
-                masterService.changeSnakeDirection(gameMessage.getSenderId(),
-                        gameMessage.getSteer().getDirection());
+                case JOIN -> {
+                    SnakesProto.GameMessage gameMessageNew =
+                            masterService.joinHandler(gameMessage.getJoin().getPlayerName(),
+                                    packet.getAddress().getHostAddress(), packet.getPort());
+
+                    sendMessage(gameMessageNew, packet.getAddress(), packet.getPort());
+                }
+
+                case ACK -> {
+                    receivedAck = gameMessage.getMsgSeq();
+                    if (gameInfo.getPlayerId() == -1) gameInfo.setPlayerId(gameMessage.getReceiverId());
+                }
+
+                case ERROR -> {
+                    receivedAck = -2;
+                    gameInfo.setPlayerId(-1);
+                }
+
+                case STEER -> {
+                    masterService.changeSnakeDirection(gameMessage.getSenderId(),
+                            gameMessage.getSteer().getDirection());
+                }
+                case TYPE_NOT_SET -> log.error("wrong type message");
             }
 
             log.debug(gameMessage);
@@ -146,6 +152,7 @@ public class UnicastService {
                     .setPlayers(gamePlayers)
                     .setStateOrder(gameInfo.getStateOrder())
                     .addAllSnakes(protobufMapper.map(gameInfo.getSnakes()))
+                    .addAllFoods(protobufMapper.mapToFoodProto(gameInfo.getFoods()))
                     .build();
 
             SnakesProto.GameMessage.StateMsg stateMsg = SnakesProto.GameMessage.StateMsg.newBuilder()
@@ -158,7 +165,8 @@ public class UnicastService {
                     .build();
 
             for (GamePlayer gamePlayer : gameInfo.getGamePlayers()) {
-                sendMessage(gameMessage, InetAddress.getByName(gamePlayer.getAddress()), gamePlayer.getPort());
+                if (!gamePlayer.getAddress().equals("localhost"))
+                    sendMessage(gameMessage, InetAddress.getByName(gamePlayer.getAddress()), gamePlayer.getPort());
             }
         }
     }

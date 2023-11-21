@@ -1,19 +1,17 @@
 package ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.GamesListMsg;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.GameStateMsg;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.JoinMsg;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameAnnouncement;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.Steer;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GameAnnouncement;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.Steer;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GamesInfo;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.info.GameInfoService;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.info.GamesInfoService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.MasterService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.net.UnicastService;
 
@@ -24,35 +22,20 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/player")
+@RequiredArgsConstructor
 @Log4j2
 public class PlayerController {
 
     private final GameInfo gameInfo;
-    private final GameInfoService gameInfoService;
     private final GamesInfo gamesInfo;
-    private final GamesInfoService gamesInfoService;
     private final UnicastService sender;
     private final MasterService masterService;
-
-    @Autowired
-    public PlayerController(GameInfo gameInfo, GameInfoService gameInfoService, GamesInfo gamesInfo, GamesInfoService gamesInfoService, UnicastService sender,
-                            MasterService masterService) {
-        this.gameInfo = gameInfo;
-        this.gameInfoService = gameInfoService;
-        this.gamesInfo = gamesInfo;
-        this.gamesInfoService = gamesInfoService;
-        this.sender = sender;
-        this.masterService = masterService;
-    }
 
     /**
      * @return состояние игры
      */
     @GetMapping("/game-state")
     public ResponseEntity<GameStateMsg> getGameState() {
-        if (gameInfoService.findPlayerIndexById(gameInfo.getPlayerId()) == -1) {
-            gameInfo.setAlive(false);
-        }
 
         GameStateMsg gameStateMsg = new GameStateMsg(gameInfo.getGamePlayers(),
                 gameInfo.getSnakes(),
@@ -110,7 +93,7 @@ public class PlayerController {
     public ResponseEntity<GamesListMsg> getGamesList() {
 
         List<String> gameNames = new ArrayList<>();
-        for (GameAnnouncement gameAnnouncement : gamesInfo.getGameAnnouncementList()) {
+        for (GameAnnouncement gameAnnouncement : gamesInfo.getGameAnnouncementMap().values()) {
             if (gameAnnouncement.isCanJoin()) {
                 gameNames.add(gameAnnouncement.getGameName());
             }
@@ -144,7 +127,8 @@ public class PlayerController {
                 .setReceiverId(0)
                 .build();
 
-        GameAnnouncement gameAnnouncement = gamesInfoService.getAnnouncementDTOByName(joinMsgRequest.getGameName());
+
+        GameAnnouncement gameAnnouncement = gamesInfo.getGameAnnouncementMap().get(joinMsg.getGameName());
 
         sender.sendMessage(gameMessage, gameAnnouncement.getMasterAddress(),
                 gameAnnouncement.getMasterPort());

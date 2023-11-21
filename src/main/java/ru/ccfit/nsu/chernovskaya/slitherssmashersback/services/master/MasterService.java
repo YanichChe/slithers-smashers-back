@@ -3,9 +3,9 @@ package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.Coord;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.Direction;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.Snake;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.Coord;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.Direction;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.Snake;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.mapper.ProtobufMapper;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 
@@ -24,8 +24,8 @@ public class MasterService {
      * Обработчик подсоединения нового игрока к игре.
      *
      * @param playerName имя нового игрока
-     * @param ipAddress адресс нового игрока
-     * @param port порт нового игрока
+     * @param ipAddress  адресс нового игрока
+     * @param port       порт нового игрока
      * @return Сообщение об ошибке или ответный успех с id игроком
      */
     public SnakesProto.GameMessage joinHandler(String playerName, String ipAddress, int port) {
@@ -40,6 +40,7 @@ public class MasterService {
             SnakesProto.GameMessage gameMessageNew = SnakesProto.GameMessage
                     .newBuilder()
                     .setError(errorMsg)
+                    .setMsgSeq(gameInfo.getIncrementMsgSeq())
                     .build();
 
             return gameMessageNew;
@@ -49,6 +50,7 @@ public class MasterService {
                     .newBuilder()
                     .setAck(SnakesProto.GameMessage.AckMsg.newBuilder().build())
                     .setReceiverId(id)
+                    .setMsgSeq(gameInfo.getIncrementMsgSeq())
                     .build();
             connectionService.createNewSnake(coords, id);
             return gameMessageNew;
@@ -58,12 +60,12 @@ public class MasterService {
     /**
      * Изменение направления змеи.
      *
-     * @param playerId id игрока
+     * @param playerId  id игрока
      * @param direction новое направление
      */
     public void changeSnakeDirection(int playerId, SnakesProto.Direction direction) {
-        List<Snake> snakes= gameInfo.getSnakes();
-        for (Snake snake: snakes){
+        List<Snake> snakes = gameInfo.getSnakes();
+        for (Snake snake : snakes) {
 
             if (snake.getPlayerId() == playerId) {
                 if (snake.getHeadDirection().equals(Direction.UP) &&

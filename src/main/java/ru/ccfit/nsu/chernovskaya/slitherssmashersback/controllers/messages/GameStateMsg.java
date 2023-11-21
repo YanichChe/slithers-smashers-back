@@ -1,9 +1,9 @@
 package ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages;
 
 import lombok.*;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.Coord;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GamePlayer;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.Snake;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.Coord;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GamePlayer;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.Snake;
 
 import java.util.ArrayList;
 import java.util.List;

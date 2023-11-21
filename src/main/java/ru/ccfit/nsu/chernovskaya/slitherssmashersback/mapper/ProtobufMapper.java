@@ -2,7 +2,7 @@ package ru.ccfit.nsu.chernovskaya.slitherssmashersback.mapper;
 
 import org.springframework.stereotype.Component;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.*;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,22 +58,27 @@ public class ProtobufMapper {
     }
 
     public Role map(SnakesProto.NodeRole nodeRole) {
-        Role role;
-        if (nodeRole.equals(SnakesProto.NodeRole.MASTER)) role = Role.MASTER;
-        else if (nodeRole.equals(SnakesProto.NodeRole.VIEWER)) role = Role.VIEWER;
-        else if (nodeRole.equals(SnakesProto.NodeRole.NORMAL)) role = Role.NORMAL;
-        else role = Role.DEPUTY;
+        Role role = null;
+
+        switch (nodeRole) {
+            case MASTER -> role = Role.MASTER;
+            case VIEWER -> role = Role.VIEWER;
+            case NORMAL -> role = Role.NORMAL;
+            case DEPUTY -> role = Role.DEPUTY;
+        }
 
         return role;
     }
 
     public SnakesProto.NodeRole map(Role role) {
-        SnakesProto.NodeRole nodeRole;
+        SnakesProto.NodeRole nodeRole = null;
 
-        if (role.equals(Role.MASTER)) nodeRole = SnakesProto.NodeRole.MASTER;
-        else if (role.equals(Role.VIEWER)) nodeRole = SnakesProto.NodeRole.VIEWER;
-        else if (role.equals(Role.NORMAL)) nodeRole = SnakesProto.NodeRole.NORMAL;
-        else nodeRole = SnakesProto.NodeRole.DEPUTY;
+        switch (role) {
+            case MASTER -> nodeRole = SnakesProto.NodeRole.MASTER;
+            case VIEWER -> nodeRole = SnakesProto.NodeRole.VIEWER;
+            case NORMAL -> nodeRole = SnakesProto.NodeRole.NORMAL;
+            case DEPUTY -> nodeRole = SnakesProto.NodeRole.DEPUTY;
+        }
 
         return nodeRole;
     }
@@ -88,33 +93,40 @@ public class ProtobufMapper {
     }
 
     public SnakesProto.GameState.Snake.SnakeState map(State state) {
-        SnakesProto.GameState.Snake.SnakeState snakeState;
+        SnakesProto.GameState.Snake.SnakeState snakeState = null;
 
-        if (state.equals(State.Alive)) snakeState = SnakesProto.GameState.Snake.SnakeState.ALIVE;
-        else snakeState = SnakesProto.GameState.Snake.SnakeState.ZOMBIE;
+        switch (state) {
+            case Alive -> snakeState = SnakesProto.GameState.Snake.SnakeState.ALIVE;
+            case Zombie -> snakeState = SnakesProto.GameState.Snake.SnakeState.ZOMBIE;
+        }
 
         return snakeState;
     }
 
     public Direction map(SnakesProto.Direction direction) {
 
-        Direction directionDTO;
-        if (direction.equals(SnakesProto.Direction.UP)) directionDTO = Direction.UP;
-        else if (direction.equals(SnakesProto.Direction.LEFT)) directionDTO = Direction.LEFT;
-        else if (direction.equals(SnakesProto.Direction.RIGHT)) directionDTO = Direction.RIGHT;
-        else directionDTO = Direction.DOWN;
+        Direction directionDTO = null;
+
+        switch (direction) {
+            case UP -> directionDTO = Direction.UP;
+            case LEFT -> directionDTO = Direction.LEFT;
+            case RIGHT -> directionDTO = Direction.RIGHT;
+            case DOWN -> directionDTO = Direction.DOWN;
+        }
 
         return directionDTO;
     }
 
     public SnakesProto.Direction map(Direction directionDTO) {
 
-        SnakesProto.Direction direction;
+        SnakesProto.Direction direction = null;
 
-        if (directionDTO.equals(Direction.UP)) direction = SnakesProto.Direction.UP;
-        else if (directionDTO.equals(Direction.DOWN)) direction = SnakesProto.Direction.DOWN;
-        else if (directionDTO.equals(Direction.LEFT)) direction = SnakesProto.Direction.LEFT;
-        else direction = SnakesProto.Direction.RIGHT;
+        switch (directionDTO) {
+            case UP -> direction = SnakesProto.Direction.UP;
+            case DOWN -> direction = SnakesProto.Direction.DOWN;
+            case LEFT -> direction = SnakesProto.Direction.LEFT;
+            case RIGHT -> direction = SnakesProto.Direction.RIGHT;
+        }
 
         return direction;
     }
@@ -188,5 +200,20 @@ public class ProtobufMapper {
         }
 
         return snakes;
+    }
+
+    public List<SnakesProto.GameState.Coord> mapToFoodProto(List<Coord> foods) {
+        List<SnakesProto.GameState.Coord> coordList = new ArrayList<>();
+
+        for (Coord coord: foods) {
+            SnakesProto.GameState.Coord coordProto = SnakesProto.GameState.Coord
+                    .newBuilder()
+                    .setX(coord.getX())
+                    .setY(coord.getY())
+                    .build();
+            coordList.add(coordProto);
+        }
+
+        return coordList;
     }
 }

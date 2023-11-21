@@ -9,7 +9,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameAnnouncement;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GameAnnouncement;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.mapper.ProtobufMapper;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GamesInfo;
 
@@ -53,7 +53,6 @@ public class MulticastReceiverService {
                 var data = Arrays.copyOfRange(packet.getData(), 0, packet.getLength());
                 SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage.parseFrom(data);
 
-                log.info(packet.getAddress().getHostAddress() + " " + packet.getPort());
                 if (gameMessage.hasAnnouncement()) {
                     GameAnnouncement gameAnnouncement = new GameAnnouncement(
                             protobufMapper.map(gameMessage.getAnnouncement().getGames(0).getConfig()),
@@ -62,7 +61,7 @@ public class MulticastReceiverService {
                             packet.getAddress(),
                             packet.getPort()
                     );
-                    gamesInfo.getGameAnnouncementList().add(gameAnnouncement);
+                    gamesInfo.getGameAnnouncementMap().put(gameAnnouncement.getGameName(), gameAnnouncement);
                 }
             }
 

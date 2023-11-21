@@ -5,9 +5,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.stereotype.Component;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GameAnnouncement;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -15,5 +16,5 @@ import java.util.List;
 @Setter
 @Component
 public class GamesInfo {
-    List<GameAnnouncement> gameAnnouncementList = new ArrayList<>();
+    Map<String, GameAnnouncement> gameAnnouncementMap = new HashMap<>();
 }
