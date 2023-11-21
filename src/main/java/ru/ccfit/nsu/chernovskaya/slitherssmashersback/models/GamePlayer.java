@@ -4,16 +4,17 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
-@Component
-public class GamesInfo {
-    List<GameAnnouncement> gameAnnouncementList = new ArrayList<>();
+public class GamePlayer {
+    private String name;
+    private int score = 0;
+    private int id;
+    private boolean isAlive;
+    private String address = "localhost";
+    private int port;
+    private Role role;
 }

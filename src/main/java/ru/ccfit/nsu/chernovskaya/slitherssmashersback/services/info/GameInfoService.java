@@ -2,7 +2,8 @@ package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.info;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.Coord;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.Snake;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.FoodService;
 
@@ -32,7 +33,7 @@ public class GameInfoService {
 
     public int findFoodIndexByInt(int coord) {
         for (int i = 0; i < gameInfo.getFoods().size(); i++) {
-            SnakesProto.GameState.Coord food = gameInfo.getFoods().get(i);
+            Coord food = gameInfo.getFoods().get(i);
             if (food.getY() * gameInfo.getWidth() + food.getX() == coord) {
                 return i;
             }
@@ -44,13 +45,7 @@ public class GameInfoService {
      * @param index индекс игрока
      */
     public void addPointToGamePlayer(int index) {
-        SnakesProto.GamePlayer updatedGamePlayer =
-                gameInfo.getGamePlayers().get(index)
-                        .toBuilder()
-                        .setScore(gameInfo.getGamePlayers().get(index).getScore() + 1)
-                        .build();
-
-        gameInfo.getGamePlayers().add(index, updatedGamePlayer);
+        gameInfo.getGamePlayers().get(index).setScore(gameInfo.getGamePlayers().get(index).getScore() + 1);
     }
 
     public void deleteGamePlayer(int index) {
@@ -58,13 +53,11 @@ public class GameInfoService {
     }
 
     public void killSnake(int i) {
-        gameInfo.setAlive(false);
         int gamePlayerIndex = gameInfo.getSnakes().get(i).getPlayerId();
-
-        SnakesProto.GameState.Snake copySnake = gameInfo.getSnakes().get(i);
+        Snake copySnake = gameInfo.getSnakes().get(i);
         gameInfo.getSnakes().remove(i);
         generateRandomFoodAfterSnakeDeath(copySnake);
-        //deleteGamePlayer(gamePlayerIndex);
+        deleteGamePlayer(gamePlayerIndex);
     }
 
     /**
@@ -72,10 +65,10 @@ public class GameInfoService {
      *
      * @param snake погибшая змейка
      */
-    private void generateRandomFoodAfterSnakeDeath(SnakesProto.GameState.Snake snake) {
+    private void generateRandomFoodAfterSnakeDeath(Snake snake) {
         List<Integer> snakeCoords = new ArrayList<>();
 
-        for (SnakesProto.GameState.Coord coord : snake.getPointsList()) {
+        for (Coord coord : snake.getCoordList()) {
             snakeCoords.add(coord.getY() * gameInfo.getWidth() + coord.getX());
         }
 

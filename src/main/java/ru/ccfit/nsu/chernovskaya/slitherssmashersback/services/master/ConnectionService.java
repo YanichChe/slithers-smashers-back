@@ -1,13 +1,10 @@
 package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master;
 
-import com.google.protobuf.ByteString;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
-
-import java.util.UUID;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.*;
 
 @Service
 @Log4j2
@@ -39,16 +36,15 @@ public class ConnectionService {
      * @return уникальный инфификатор игрока
      */
     public int createNewGamePlayer(String username, SnakesProto.NodeRole nodeRole, String ipAddress, int port) {
+
         int id = generateUniqueId();
-        SnakesProto.GamePlayer gamePlayer = SnakesProto.GamePlayer
-                .newBuilder()
-                .setName(username)
-                .setScore(0)
-                .setId(id)
-                .setIpAddress(ipAddress)
-                .setPort(port)
-                .setRole(nodeRole)
-                .build();
+        GamePlayer gamePlayer = new GamePlayer();
+        gamePlayer.setName(username);
+        gamePlayer.setId(id);
+        gamePlayer.setRole(Role.NORMAL);
+        gamePlayer.setAddress(ipAddress);
+        gamePlayer.setPort(port);
+
         gameInfo.getGamePlayers().add(gamePlayer);
         log.info("New player " + gamePlayer.toString());
         return id;
@@ -63,13 +59,11 @@ public class ConnectionService {
      */
     public int createNewGamePlayer(String username, SnakesProto.NodeRole nodeRole) {
         int id = generateUniqueId();
-        SnakesProto.GamePlayer gamePlayer = SnakesProto.GamePlayer
-                .newBuilder()
-                .setName(username)
-                .setScore(0)
-                .setId(id)
-                .setRole(nodeRole)
-                .build();
+        GamePlayer gamePlayer = new GamePlayer();
+        gamePlayer.setName(username);
+        gamePlayer.setId(id);
+        gamePlayer.setRole(Role.NORMAL);
+
         gameInfo.getGamePlayers().add(gamePlayer);
         log.info("New player " + gamePlayer.toString());
         return id;
@@ -81,15 +75,14 @@ public class ConnectionService {
      * @param coords коордиинаты змейки
      * @param id инфикатор владельца змейки
      */
-    public void createNewSnake(SnakesProto.GameState.Coord[] coords, int id) {
-        SnakesProto.GameState.Snake snake = SnakesProto.GameState.Snake
-                .newBuilder()
-                .setState(SnakesProto.GameState.Snake.SnakeState.ALIVE)
-                .setPlayerId(id)
-                .addPoints(coords[0])
-                .addPoints(coords[1])
-                .setHeadDirection(SnakesProto.Direction.RIGHT)
-                .build();
+    public void createNewSnake(Coord[] coords, int id) {
+
+        Snake snake = new Snake();
+        snake.setState(State.Alive);
+        snake.getCoordList().add(coords[0]);
+        snake.getCoordList().add(coords[1]);
+        snake.setPlayerId(id);
+        snake.setHeadDirection(Direction.RIGHT);
 
         gameInfo.getSnakes().add(snake);
         log.info("New snake " + snake.toString());
@@ -100,8 +93,8 @@ public class ConnectionService {
      *
      * @return свободные координаты
      */
-    public SnakesProto.GameState.Coord[] searchPlace() {
-        SnakesProto.GameState.Coord[] coords = new SnakesProto.GameState.Coord[2];
+    public Coord[] searchPlace() {
+        Coord[] coords = new Coord[2];
 
         int height = gameInfo.getHeight();
         int width = gameInfo.getWidth();
@@ -114,13 +107,13 @@ public class ConnectionService {
             }
         }
 
-        for (SnakesProto.GameState.Snake snake : gameInfo.getSnakes()) {
-            for (SnakesProto.GameState.Coord coord : snake.getPointsList()) {
+        for (Snake snake : gameInfo.getSnakes()) {
+            for (Coord coord : snake.getCoordList()) {
                 gameField[coord.getX() * width + coord.getY()] = 1;
             }
         }
 
-        for (SnakesProto.GameState.Coord coord : gameInfo.getFoods()) {
+        for (Coord coord : gameInfo.getFoods()) {
             gameField[coord.getY() * width + coord.getX()] = 1;
         }
 
@@ -139,8 +132,8 @@ public class ConnectionService {
                     }
                 }
                 if (isZeroSquare) {
-                    coords[0] = SnakesProto.GameState.Coord.newBuilder().setX(i + 2).setY(j + 2).build();
-                    coords[1] = SnakesProto.GameState.Coord.newBuilder().setX(i + 3).setY(j + 2).build();
+                    coords[0] = new Coord(i + 2, j + 2);
+                    coords[1] = new Coord(i + 3, j + 2);
                     return coords;
                 }
             }

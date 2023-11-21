@@ -3,7 +3,8 @@ package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.Coord;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.Snake;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 
 import java.util.ArrayList;
@@ -27,13 +28,13 @@ public class FoodService {
         int height = gameInfo.getHeight();
         int width = gameInfo.getWidth();
 
-        for (SnakesProto.GameState.Snake snake : gameInfo.getSnakes()) {
-            for (SnakesProto.GameState.Coord coord : snake.getPointsList()) {
+        for (Snake snake : gameInfo.getSnakes()) {
+            for (Coord coord : snake.getCoordList()) {
                 occupiedCoords.add(coord.getY() * height + coord.getX());
             }
         }
 
-        for (SnakesProto.GameState.Coord coord : gameInfo.getFoods()) {
+        for (Coord coord : gameInfo.getFoods()) {
             occupiedCoords.add(coord.getY() * height + coord.getX());
         }
 
@@ -49,11 +50,9 @@ public class FoodService {
 
             occupiedCoords.add(coordNewFood);
 
-            SnakesProto.GameState.Coord coordNewFoodXY = SnakesProto.GameState.Coord
-                    .newBuilder()
-                    .setY(coordNewFood / width)
-                    .setX(coordNewFood % width)
-                    .build();
+            Coord coordNewFoodXY = new Coord();
+            coordNewFoodXY.setX(coordNewFood % width);
+            coordNewFoodXY.setY(coordNewFood / width);
 
             gameInfo.getFoods().add(coordNewFoodXY);
         }
@@ -67,13 +66,13 @@ public class FoodService {
         int height = gameInfo.getHeight();
         int width = gameInfo.getWidth();
 
-        for (SnakesProto.GameState.Snake snake : gameInfo.getSnakes()) {
-            for (SnakesProto.GameState.Coord coord : snake.getPointsList()) {
+        for (Snake snake : gameInfo.getSnakes()) {
+            for (Coord coord : snake.getCoordList()) {
                 occupiedCoords.add(coord.getY() * height + coord.getX());
             }
         }
 
-        for (SnakesProto.GameState.Coord coord : gameInfo.getFoods()) {
+        for (Coord coord : gameInfo.getFoods()) {
             occupiedCoords.add(coord.getY() * height + coord.getX());
         }
 
@@ -81,11 +80,10 @@ public class FoodService {
             int create = (int) (Math.random() * 2);
             if (create == 1) {
                 if (!occupiedCoords.contains(coord)) {
-                    SnakesProto.GameState.Coord coordNewFoodXY = SnakesProto.GameState.Coord
-                            .newBuilder()
-                            .setY(coord / width)
-                            .setX(coord % width)
-                            .build();
+
+                    Coord coordNewFoodXY = new Coord();
+                    coordNewFoodXY.setX(coord % width);
+                    coordNewFoodXY.setY(coord / width);
 
                     gameInfo.getFoods().add(coordNewFoodXY);
                     log.info(coordNewFoodXY);

@@ -2,7 +2,6 @@ package ru.ccfit.nsu.chernovskaya.slitherssmashersback.models;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 
@@ -14,13 +13,13 @@ import java.util.List;
 @Setter
 public class GameInfo {
 
-    private SnakesProto.GameConfig gameConfig;
+    private GameConfig gameConfig;
     private boolean canJoin = true;
     private String gameName;
 
-    private List<SnakesProto.GameState.Snake> snakes = new ArrayList<>();
-    private List<SnakesProto.GameState.Coord> foods = new ArrayList<>();
-    private List<SnakesProto.GamePlayer> gamePlayers = new ArrayList<>();
+    private List<Snake> snakes = new ArrayList<>();
+    private List<Coord> foods = new ArrayList<>();
+    private List<GamePlayer> gamePlayers = new ArrayList<>();
 
     private int height;
     private int width;
@@ -31,6 +30,7 @@ public class GameInfo {
     private int playerId = -1;
     private boolean increase;
     private boolean isAlive;
+    private int score = 0;
 
     private long msqSeq = -1;
 

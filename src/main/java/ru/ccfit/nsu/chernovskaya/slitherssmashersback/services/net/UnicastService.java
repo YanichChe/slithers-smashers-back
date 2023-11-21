@@ -3,8 +3,8 @@ package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.net;
 import com.google.protobuf.InvalidProtocolBufferException;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.apache.logging.log4j.Level;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -12,6 +12,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GamePlayer;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.mapper.ProtobufMapper;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.GameControlService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.MasterService;
@@ -22,7 +24,8 @@ import java.util.Arrays;
 
 @Service
 @Log4j2
-public class SenderService {
+@RequiredArgsConstructor
+public class UnicastService {
 
     private long receivedAck = -1;
 
@@ -40,13 +43,7 @@ public class SenderService {
     private final GameInfo gameInfo;
     private final GameControlService gameControlService;
     private final MasterService masterService;
-
-    public SenderService(GameInfo gameInfo, GameControlService gameControlService,
-                         MasterService masterService) {
-        this.gameInfo = gameInfo;
-        this.gameControlService = gameControlService;
-        this.masterService = masterService;
-    }
+    private final ProtobufMapper protobufMapper;
 
     @PostConstruct
     public void initSocket() throws SocketException {
@@ -72,9 +69,8 @@ public class SenderService {
             DatagramPacket packet = new DatagramPacket(buf, buf.length,
                     inetAddress, port);
             datagramSocket.send(packet);
-            log.info("send packet " + packet);
         } catch (IOException e) {
-           // log.info(e.getMessage());
+            //log.error(e.getMessage());
         }
     }
 
@@ -103,12 +99,12 @@ public class SenderService {
             if (gameMessage.hasState()) {
                 gameControlService.updateState(gameMessage.getState());
             } else if (gameMessage.hasDiscover() & gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
-                SnakesProto.GameMessage gameMessageNew = masterService.generateAnnouncementMessage();
+                SnakesProto.GameMessage gameMessageNew = generateAnnouncementMessage();
                 sendMessage(gameMessageNew, packet.getAddress(), packet.getPort());
             } else if (gameMessage.hasJoin()) {
                 SnakesProto.GameMessage gameMessageNew =
                         masterService.joinHandler(gameMessage.getJoin().getPlayerName(),
-                                String.valueOf(packet.getAddress()), packet.getPort());
+                                packet.getAddress().getHostAddress(), packet.getPort());
 
                 sendMessage(gameMessageNew, packet.getAddress(), packet.getPort());
 
@@ -143,13 +139,13 @@ public class SenderService {
 
             SnakesProto.GamePlayers gamePlayers = SnakesProto.GamePlayers
                     .newBuilder()
-                    .addAllPlayers(gameInfo.getGamePlayers())
+                    .addAllPlayers(protobufMapper.mapFromGamePlayerDTO(gameInfo.getGamePlayers()))
                     .build();
 
             SnakesProto.GameState gameState = SnakesProto.GameState.newBuilder()
                     .setPlayers(gamePlayers)
                     .setStateOrder(gameInfo.getStateOrder())
-                    .addAllSnakes(gameInfo.getSnakes())
+                    .addAllSnakes(protobufMapper.map(gameInfo.getSnakes()))
                     .build();
 
             SnakesProto.GameMessage.StateMsg stateMsg = SnakesProto.GameMessage.StateMsg.newBuilder()
@@ -161,8 +157,8 @@ public class SenderService {
                     .setState(stateMsg)
                     .build();
 
-            for (SnakesProto.GamePlayer gamePlayer : gameInfo.getGamePlayers()) {
-                sendMessage(gameMessage, InetAddress.getByName(gamePlayer.getIpAddress()), gamePlayer.getPort());
+            for (GamePlayer gamePlayer : gameInfo.getGamePlayers()) {
+                sendMessage(gameMessage, InetAddress.getByName(gamePlayer.getAddress()), gamePlayer.getPort());
             }
         }
     }
@@ -200,13 +196,45 @@ public class SenderService {
     public void sendAnnouncementMsgPeriodic() throws IOException {
         if (gameInfo.getGameConfig() != null && gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
 
-                SnakesProto.GameMessage gameMessage = masterService.generateAnnouncementMessage();
-                byte[] buf = gameMessage.toByteArray();
+            SnakesProto.GameMessage gameMessage = generateAnnouncementMessage();
+            byte[] buf = gameMessage.toByteArray();
 
-                DatagramPacket packet = new DatagramPacket(buf, buf.length,
-                        InetAddress.getByName(groupAddress), groupPort);
+            DatagramPacket packet = new DatagramPacket(buf, buf.length,
+                    InetAddress.getByName(groupAddress), groupPort);
 
-                datagramSocket.send(packet);
+            datagramSocket.send(packet);
         }
+    }
+
+    /**
+     * Генерация сообщения-уведомления об игре
+     *
+     * @return новое сообщение с @AnnouncementMessage
+     */
+    private SnakesProto.GameMessage generateAnnouncementMessage() {
+
+        SnakesProto.GamePlayers gamePlayers = SnakesProto.GamePlayers
+                .newBuilder()
+                .addAllPlayers(protobufMapper.mapFromGamePlayerDTO(gameInfo.getGamePlayers()))
+                .build();
+
+        SnakesProto.GameAnnouncement gameAnnouncement = SnakesProto.GameAnnouncement.newBuilder()
+                .setPlayers(gamePlayers)
+                .setConfig(protobufMapper.map(gameInfo.getGameConfig()))
+                .setCanJoin(gameInfo.isCanJoin())
+                .setGameName(gameInfo.getGameName())
+                .build();
+
+        SnakesProto.GameMessage.AnnouncementMsg announcementMsg =
+                SnakesProto.GameMessage.AnnouncementMsg.newBuilder()
+                        .addGames(gameAnnouncement)
+                        .build();
+
+        SnakesProto.GameMessage gameMessageNew = SnakesProto.GameMessage.newBuilder()
+                .setMsgSeq(gameInfo.getIncrementMsgSeq())
+                .setAnnouncement(announcementMsg)
+                .build();
+
+        return gameMessageNew;
     }
 }

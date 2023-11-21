@@ -1,56 +1,24 @@
 package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.Coord;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.Direction;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.Snake;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.mapper.ProtobufMapper;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.ConnectionService;
 
-import java.util.Iterator;
+import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class MasterService {
 
     private final GameInfo gameInfo;
     private final ConnectionService connectionService;
+    private final ProtobufMapper mapper;
 
-    @Autowired
-    public MasterService(GameInfo gameInfo, ConnectionService connectionService) {
-        this.gameInfo = gameInfo;
-        this.connectionService = connectionService;
-    }
-
-    /**
-     * Генерация сообщения-уведомления об игре
-     *
-     * @return новое сообщение с @AnnouncementMessage
-     */
-    public SnakesProto.GameMessage  generateAnnouncementMessage() {
-
-        SnakesProto.GamePlayers gamePlayers = SnakesProto.GamePlayers
-                .newBuilder()
-                .addAllPlayers(gameInfo.getGamePlayers())
-                .build();
-
-        SnakesProto.GameAnnouncement gameAnnouncement = SnakesProto.GameAnnouncement.newBuilder()
-                .setPlayers(gamePlayers)
-                .setConfig(gameInfo.getGameConfig())
-                .setCanJoin(gameInfo.isCanJoin())
-                .setGameName(gameInfo.getGameName())
-                .build();
-
-        SnakesProto.GameMessage.AnnouncementMsg announcementMsg =
-                SnakesProto.GameMessage.AnnouncementMsg.newBuilder()
-                        .addGames(gameAnnouncement)
-                        .build();
-
-        SnakesProto.GameMessage gameMessageNew = SnakesProto.GameMessage.newBuilder()
-                .setMsgSeq(gameInfo.getIncrementMsgSeq())
-                .setAnnouncement(announcementMsg)
-                .build();
-
-        return gameMessageNew;
-    }
 
     /**
      * Обработчик подсоединения нового игрока к игре.
@@ -63,7 +31,7 @@ public class MasterService {
     public SnakesProto.GameMessage joinHandler(String playerName, String ipAddress, int port) {
         int id = connectionService.createNewGamePlayer(playerName, SnakesProto.NodeRole.NORMAL, ipAddress, port);
 
-        SnakesProto.GameState.Coord[] coords = connectionService.searchPlace();
+        Coord[] coords = connectionService.searchPlace();
         if (coords == null) {
             SnakesProto.GameMessage.ErrorMsg errorMsg = SnakesProto.GameMessage.ErrorMsg
                     .newBuilder()
@@ -94,22 +62,21 @@ public class MasterService {
      * @param direction новое направление
      */
     public void changeSnakeDirection(int playerId, SnakesProto.Direction direction) {
-        Iterator<SnakesProto.GameState.Snake> iterator = gameInfo.getSnakes().iterator();
-        while (iterator.hasNext()) {
-            SnakesProto.GameState.Snake snake = iterator.next();
+        List<Snake> snakes= gameInfo.getSnakes();
+        for (Snake snake: snakes){
+
             if (snake.getPlayerId() == playerId) {
-                if (snake.getHeadDirection().equals(SnakesProto.Direction.UP) &&
-                        direction.equals(SnakesProto.Direction.DOWN)
-                        || snake.getHeadDirection().equals(SnakesProto.Direction.DOWN) &&
+                if (snake.getHeadDirection().equals(Direction.UP) &&
+                        direction.equals(Direction.DOWN)
+                        || snake.getHeadDirection().equals(Direction.DOWN) &&
                         direction.equals(SnakesProto.Direction.UP)
-                        || snake.getHeadDirection().equals(SnakesProto.Direction.RIGHT) &&
-                        direction.equals(SnakesProto.Direction.LEFT)
-                        || snake.getHeadDirection().equals(SnakesProto.Direction.LEFT) &&
-                        direction.equals(SnakesProto.Direction.RIGHT)
-                )
-                    break;
-                iterator.remove();
-                gameInfo.getSnakes().add(snake.toBuilder().setHeadDirection(direction).build());
+                        || snake.getHeadDirection().equals(Direction.RIGHT) &&
+                        direction.equals(Direction.LEFT)
+                        || snake.getHeadDirection().equals(Direction.LEFT) &&
+                        direction.equals(Direction.RIGHT)
+                ) break;
+                snake.setHeadDirection(mapper.map(direction));
+
                 break;
             }
         }

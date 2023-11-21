@@ -1,12 +1,13 @@
 package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.mapper.ProtobufMapper;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.*;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.info.GameInfoService;
 
 import java.util.ArrayList;
@@ -14,20 +15,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.Direction.*;
+
 @Service
 @Log4j2
+@RequiredArgsConstructor
 public class GameControlService {
 
     private final GameInfo gameInfo;
     private final GameInfoService gameInfoService;
     private final FoodService foodService;
-
-    @Autowired
-    public GameControlService(GameInfo gameInfo, GameInfoService gameInfoService, FoodService foodService) {
-        this.gameInfo = gameInfo;
-        this.gameInfoService = gameInfoService;
-        this.foodService = foodService;
-    }
+    private final ProtobufMapper mapper;
 
     /**
      * Обновление данных о игре в @GameInfo через полученное сообщение от сервера.
@@ -35,10 +33,13 @@ public class GameControlService {
      * @param stateMsg сообщение о состоянии игры.
      */
     public void updateState(SnakesProto.GameMessage.StateMsg stateMsg) {
-        gameInfo.setGamePlayers(stateMsg.getState().getPlayers().getPlayersList());
-        gameInfo.setSnakes(stateMsg.getState().getSnakesList());
-        gameInfo.setStateOrder(stateMsg.getState().getStateOrder());
-        gameInfo.setFoods(stateMsg.getState().getFoodsList());
+        GameState gameState = new GameState();
+        mapper.map(stateMsg, gameState);
+
+        gameInfo.setGamePlayers(gameState.getPlayers());
+        gameInfo.setSnakes(gameState.getSnakes());
+        gameInfo.setStateOrder(gameState.getStateOrder());
+        gameInfo.setFoods(gameState.getFoods());
     }
 
     /**
@@ -52,50 +53,42 @@ public class GameControlService {
                 && gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
             for (int i = 0; i < gameInfo.getSnakes().size(); i++) {
 
-                SnakesProto.GameState.Snake snake = gameInfo.getSnakes().get(i);
-                int headX = snake.getPoints(0).getX();
-                int headY = snake.getPoints(0).getY();
-                SnakesProto.Direction headDirection = snake.getHeadDirection();
+                Snake snake = gameInfo.getSnakes().get(i);
+                int headX = snake.getCoordList().get(0).getX();
+                int headY = snake.getCoordList().get(0).getY();
+                Direction headDirection = snake.getHeadDirection();
 
                 int newHeadX = headX;
                 int newHeadY = headY;
 
-                if (headDirection == SnakesProto.Direction.UP) {
+                if (headDirection == UP) {
                     newHeadY--;
-                } else if (headDirection == SnakesProto.Direction.DOWN) {
+                } else if (headDirection == DOWN) {
                     newHeadY++;
-                } else if (headDirection == SnakesProto.Direction.LEFT) {
+                } else if (headDirection == LEFT) {
                     newHeadX--;
-                } else if (headDirection == SnakesProto.Direction.RIGHT) {
+                } else if (headDirection == RIGHT) {
                     newHeadX++;
                 }
 
                 newHeadX = (newHeadX + gameInfo.getWidth()) % gameInfo.getWidth();
                 newHeadY = (newHeadY + gameInfo.getHeight()) % gameInfo.getHeight();
 
-                SnakesProto.GameState.Coord newHeadCoord = SnakesProto.GameState.Coord.newBuilder()
-                        .setX(newHeadX)
-                        .setY(newHeadY)
-                        .build();
+                Coord newHeadCoord = new Coord(newHeadX, newHeadY);
 
-                SnakesProto.GameState.Snake.Builder modifiedSnakeBuilder = snake.toBuilder();
-                modifiedSnakeBuilder.clearPoints();
+                List<Coord> copySnakeCoords = new ArrayList<>();
+                copySnakeCoords.addAll(snake.getCoordList());
 
-                modifiedSnakeBuilder.addPoints(newHeadCoord);
+                snake.getCoordList().clear();
 
-                int to = snake.getPointsList().size() - 1;
+                snake.getCoordList().add(newHeadCoord);
+
+                int to = copySnakeCoords.size() - 1;
                 if (gameInfo.isIncrease()) to += 1;
                 for (int j = 0; j < to; j++) {
-                    SnakesProto.GameState.Coord point = snake.getPoints(j);
-                    modifiedSnakeBuilder.addPoints(point);
+                    Coord point = copySnakeCoords.get(j);
+                    snake.getCoordList().add(point);
                 }
-
-                SnakesProto.GameState.Snake modifiedSnake = modifiedSnakeBuilder.build();
-
-                gameInfo.getSnakes().remove(i);
-                gameInfo.getSnakes().add(i, modifiedSnake);
-
-                log.debug(modifiedSnake.getPointsList());
 
                 handlerEatenFood();
                 intersectionHandler();
@@ -112,27 +105,23 @@ public class GameControlService {
     private void handlerEatenFood() {
         gameInfo.setIncrease(false);
         List<Integer> foodCoords = new ArrayList<>();
-        for (SnakesProto.GameState.Coord coord : gameInfo.getFoods()) {
+        for (Coord coord : gameInfo.getFoods()) {
             foodCoords.add(coord.getY() * gameInfo.getWidth() + coord.getX());
         }
 
-        for (SnakesProto.GameState.Snake snake : gameInfo.getSnakes()) {
+        for (Snake snake : gameInfo.getSnakes()) {
             for (int x : foodCoords) {
-                if (snake.getPoints(0).getY() * gameInfo.getWidth() +
-                        snake.getPoints(0).getX() == x) {
+                if (snake.getCoordList().get(0).getY() * gameInfo.getWidth() +
+                        snake.getCoordList().get(0).getX() == x) {
                     int indexPlayer = gameInfoService.findPlayerIndexById(snake.getPlayerId());
-                    SnakesProto.GamePlayer gamePlayer = gameInfo.getGamePlayers().get(indexPlayer);
-
-                    SnakesProto.GamePlayer.Builder modifiedPlayerGameBuilder = gamePlayer.toBuilder();
-                    modifiedPlayerGameBuilder.setScore(gamePlayer.getScore() + 1);
-
-                    gameInfo.getGamePlayers().remove(indexPlayer);
-                    gameInfo.getGamePlayers().add(indexPlayer, modifiedPlayerGameBuilder.build());
+                    GamePlayer gamePlayer = gameInfo.getGamePlayers().get(indexPlayer);
+                    gamePlayer.setScore(gamePlayer.getScore() + 1);
+                    gameInfo.setScore(gamePlayer.getScore() + 1);
+                    log.info(gamePlayer.getScore());
 
                     int index = gameInfoService.findFoodIndexByInt(x);
                     gameInfo.getFoods().remove(index);
 
-                    log.debug(modifiedPlayerGameBuilder.getScore());
                     gameInfo.setIncrease(true);
                     break;
                 }
@@ -145,9 +134,9 @@ public class GameControlService {
      */
     private void intersectionHandler() {
         List<List<Integer>> snakesCoords = new ArrayList<>();
-        for (SnakesProto.GameState.Snake snake : gameInfo.getSnakes()) {
+        for (Snake snake : gameInfo.getSnakes()) {
             List<Integer> newList = new ArrayList<>();
-            for (SnakesProto.GameState.Coord coord : snake.getPointsList()) {
+            for (Coord coord : snake.getCoordList()) {
                 newList.add(coord.getY() * gameInfo.getWidth() + coord.getX());
             }
             snakesCoords.add(newList);
@@ -195,8 +184,8 @@ public class GameControlService {
     private int getAliveSnakesCount() {
         int total = 0;
 
-        for (SnakesProto.GameState.Snake snake : gameInfo.getSnakes()) {
-            if (snake.getState().equals(SnakesProto.GameState.Snake.SnakeState.ALIVE)) {
+        for (Snake snake : gameInfo.getSnakes()) {
+            if (snake.getState().equals(State.Alive)) {
                 total++;
             }
         }

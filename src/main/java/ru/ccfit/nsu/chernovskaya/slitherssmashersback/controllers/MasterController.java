@@ -6,7 +6,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto.GameRequest;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.Coord;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameConfig;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameRequest;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.ConnectionService;
 
@@ -41,13 +43,12 @@ public class MasterController {
     public ResponseEntity<String> startGame(@RequestBody GameRequest gameRequest) {
 
         gameInfo.setAlive(true);
-        SnakesProto.GameConfig gameConfig = SnakesProto.GameConfig
-                .newBuilder()
-                .setHeight(gameRequest.getHeight())
-                .setWidth(gameRequest.getWidth())
-                .setFoodStatic(gameRequest.getFoodStatic())
-                .setStateDelayMs(stateDelayMs)
-                .build();
+        GameConfig gameConfig = new GameConfig();
+        gameConfig.setHeight(gameRequest.getHeight());
+        gameConfig.setWidth(gameRequest.getWidth());
+        gameConfig.setFoodStatic(gameRequest.getFoodStatic());
+        gameConfig.setStateDelayMs(stateDelayMs);
+
 
         gameInfo.setGameConfig(gameConfig);
 
@@ -60,7 +61,7 @@ public class MasterController {
         gameInfo.setPlayerId(id);
 
         if (gameRequest.getHaveSnake() == 1) {
-            SnakesProto.GameState.Coord[] coords = connectionService.searchPlace();
+            Coord[] coords = connectionService.searchPlace();
             connectionService.createNewSnake(coords, id);
 
         }

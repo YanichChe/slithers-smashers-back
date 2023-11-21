@@ -1,6 +1,7 @@
-package ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto;
+package ru.ccfit.nsu.chernovskaya.slitherssmashersback.models;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
@@ -8,6 +9,7 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 @NoArgsConstructor
 @AllArgsConstructor
 @Setter
+@Getter
 public class Steer {
 
     private int direction;

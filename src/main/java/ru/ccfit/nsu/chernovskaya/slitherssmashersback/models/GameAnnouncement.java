@@ -1,17 +1,18 @@
-package ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto;
+package ru.ccfit.nsu.chernovskaya.slitherssmashersback.models;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 
 import java.net.InetAddress;
 
 @AllArgsConstructor
+@NoArgsConstructor
 @Getter
 @Setter
-public class GameAnnouncementDTO {
-    private SnakesProto.GameConfig config;
+public class GameAnnouncement {
+    private GameConfig config;
     private boolean canJoin;
     private String gameName;
     private InetAddress masterAddress;

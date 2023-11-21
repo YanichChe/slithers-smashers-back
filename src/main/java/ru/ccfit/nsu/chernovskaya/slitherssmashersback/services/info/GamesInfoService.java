@@ -1,7 +1,7 @@
 package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.info;
 
 import org.springframework.stereotype.Service;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto.GameAnnouncementDTO;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameAnnouncement;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GamesInfo;
 
 @Service
@@ -14,8 +14,8 @@ public class GamesInfoService {
     }
 
 
-    public GameAnnouncementDTO getAnnouncementDTOByName(String gameName) {
-        for (GameAnnouncementDTO gameAnnouncement: gamesInfo.getGameAnnouncementList()) {
+    public GameAnnouncement getAnnouncementDTOByName(String gameName) {
+        for (GameAnnouncement gameAnnouncement: gamesInfo.getGameAnnouncementList()) {
             if (gameAnnouncement.getGameName().equals(gameName))
                 return gameAnnouncement;
         }

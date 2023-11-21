@@ -8,16 +8,15 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.GamesListMsg;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.GameStateMsg;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.JoinMsg;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto.GameAnnouncementDTO;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.dto.Steer;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameAnnouncement;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.Steer;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GamesInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.info.GameInfoService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.info.GamesInfoService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.MasterService;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.net.SenderService;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.net.UnicastService;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -32,11 +31,11 @@ public class PlayerController {
     private final GameInfoService gameInfoService;
     private final GamesInfo gamesInfo;
     private final GamesInfoService gamesInfoService;
-    private final SenderService sender;
+    private final UnicastService sender;
     private final MasterService masterService;
 
     @Autowired
-    public PlayerController(GameInfo gameInfo, GameInfoService gameInfoService, GamesInfo gamesInfo, GamesInfoService gamesInfoService, SenderService sender,
+    public PlayerController(GameInfo gameInfo, GameInfoService gameInfoService, GamesInfo gamesInfo, GamesInfoService gamesInfoService, UnicastService sender,
                             MasterService masterService) {
         this.gameInfo = gameInfo;
         this.gameInfoService = gameInfoService;
@@ -51,23 +50,15 @@ public class PlayerController {
      */
     @GetMapping("/game-state")
     public ResponseEntity<GameStateMsg> getGameState() {
-        if (gameInfo.getPlayerId() == -1) {
-            GameStateMsg gameStateMsg = new GameStateMsg(gameInfo.getGamePlayers(),
-                    gameInfo.getSnakes(),
-                    gameInfo.getFoods(),
-                    gameInfo.isAlive(),
-                    0);
-
-            return ResponseEntity.ok()
-                    .body(gameStateMsg);
+        if (gameInfoService.findPlayerIndexById(gameInfo.getPlayerId()) == -1) {
+            gameInfo.setAlive(false);
         }
-        SnakesProto.GamePlayer gamePlayer = gameInfo.getGamePlayers()
-                .get(gameInfoService.findPlayerIndexById(gameInfo.getPlayerId()));
+
         GameStateMsg gameStateMsg = new GameStateMsg(gameInfo.getGamePlayers(),
                 gameInfo.getSnakes(),
                 gameInfo.getFoods(),
                 gameInfo.isAlive(),
-                gamePlayer.getScore());
+                gameInfo.getScore());
 
         log.debug(gameInfo.getSnakes());
         return ResponseEntity.ok()
@@ -119,7 +110,7 @@ public class PlayerController {
     public ResponseEntity<GamesListMsg> getGamesList() {
 
         List<String> gameNames = new ArrayList<>();
-        for (GameAnnouncementDTO gameAnnouncement : gamesInfo.getGameAnnouncementList()) {
+        for (GameAnnouncement gameAnnouncement : gamesInfo.getGameAnnouncementList()) {
             if (gameAnnouncement.isCanJoin()) {
                 gameNames.add(gameAnnouncement.getGameName());
             }
@@ -153,7 +144,7 @@ public class PlayerController {
                 .setReceiverId(0)
                 .build();
 
-        GameAnnouncementDTO gameAnnouncement = gamesInfoService.getAnnouncementDTOByName(joinMsgRequest.getGameName());
+        GameAnnouncement gameAnnouncement = gamesInfoService.getAnnouncementDTOByName(joinMsgRequest.getGameName());
 
         sender.sendMessage(gameMessage, gameAnnouncement.getMasterAddress(),
                 gameAnnouncement.getMasterPort());
