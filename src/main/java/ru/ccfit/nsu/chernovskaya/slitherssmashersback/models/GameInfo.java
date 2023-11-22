@@ -32,7 +32,7 @@ public class GameInfo {
 
     private String playerName;
     private int playerId = -1;
-    private boolean increase;
+
     private boolean isAlive;
     private int score = 0;
 

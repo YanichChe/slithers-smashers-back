@@ -113,7 +113,7 @@ public class ConnectionService {
 
         for (Snake snake : gameInfo.getSnakes()) {
             for (Coord coord : snake.getCoordList()) {
-                gameField[coord.getX() * width + coord.getY()] = 1;
+                gameField[coord.getY() * width + coord.getX()] = 1;
             }
         }
 

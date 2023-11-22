@@ -78,7 +78,7 @@ public class PlayerController {
 
             sender.sendMessage(gameMessage, InetAddress.getByName(gameInfo.getMasterInetAddress()),
                     gameInfo.getMasterPort());
-            sender.waitAck(gameInfo.getMsqSeq(), gameMessage);
+            //sender.waitAck(gameInfo.getMsqSeq(), gameMessage);
         }
 
         return ResponseEntity.ok("update request");
@@ -138,7 +138,7 @@ public class PlayerController {
             return ResponseEntity.ok("not found place");
         }*/
 
-        gameInfo.setMasterInetAddress(String.valueOf(gameAnnouncement.getMasterAddress()));
+        gameInfo.setMasterInetAddress(gameAnnouncement.getMasterAddress().getHostAddress());
         gameInfo.setMasterPort(gameAnnouncement.getMasterPort());
 
         gameInfo.setNodeRole(SnakesProto.NodeRole.NORMAL);

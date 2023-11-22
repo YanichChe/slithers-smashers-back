@@ -10,10 +10,7 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.mapper.ProtobufMapper;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.*;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.*;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.Direction.*;
 
@@ -26,6 +23,8 @@ public class GameControlService {
     private final FoodService foodService;
     private final ProtobufMapper mapper;
 
+    private final Set<Integer> isIncrease = new HashSet<>();
+
     /**
      * Обновление данных о игре в @GameInfo через полученное сообщение от сервера.
      *
@@ -34,7 +33,6 @@ public class GameControlService {
     public void updateState(SnakesProto.GameMessage.StateMsg stateMsg) {
         GameState gameState = new GameState();
         mapper.map(stateMsg, gameState);
-
         gameInfo.setGamePlayers(gameState.getPlayers());
         gameInfo.setSnakes(gameState.getSnakes());
         gameInfo.setStateOrder(gameState.getStateOrder());
@@ -50,77 +48,88 @@ public class GameControlService {
     public void gameStep() {
         if (gameInfo.getSnakes() != null && gameInfo.getNodeRole() != null
                 && gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
+
             for (int i = 0; i < gameInfo.getSnakes().size(); i++) {
 
                 Snake snake = gameInfo.getSnakes().get(i);
-                int headX = snake.getCoordList().get(0).getX();
-                int headY = snake.getCoordList().get(0).getY();
-                Direction headDirection = snake.getHeadDirection();
+                Coord newHeadCoord = getHeadCoord(snake);
 
-                int newHeadX = headX;
-                int newHeadY = headY;
-
-                if (headDirection == UP) {
-                    newHeadY--;
-                } else if (headDirection == DOWN) {
-                    newHeadY++;
-                } else if (headDirection == LEFT) {
-                    newHeadX--;
-                } else if (headDirection == RIGHT) {
-                    newHeadX++;
-                }
-
-                newHeadX = (newHeadX + gameInfo.getWidth()) % gameInfo.getWidth();
-                newHeadY = (newHeadY + gameInfo.getHeight()) % gameInfo.getHeight();
-
-                Coord newHeadCoord = new Coord(newHeadX, newHeadY);
-
-                List<Coord> copySnakeCoords = new ArrayList<>();
-                copySnakeCoords.addAll(snake.getCoordList());
-
+                List<Coord> copySnakeCoords = new ArrayList<>(snake.getCoordList());
                 snake.getCoordList().clear();
 
                 snake.getCoordList().add(newHeadCoord);
-
                 int to = copySnakeCoords.size() - 1;
-                if (gameInfo.isIncrease()) to += 1;
+
+                if (isIncrease.contains(snake.getPlayerId())) {
+                    log.info(to);
+                    to += 1;
+                }
+
                 for (int j = 0; j < to; j++) {
                     Coord point = copySnakeCoords.get(j);
                     snake.getCoordList().add(point);
                 }
 
-                handlerEatenFood();
-                intersectionHandler();
-
-                foodService.generateFood(gameInfo.getGameConfig().getFoodStatic() + getAliveSnakesCount()
-                        - gameInfo.getFoods().size());
             }
+
+            handlerEatenFood();
+            intersectionHandler();
+
+            foodService.generateFood(gameInfo.getGameConfig().getFoodStatic() + getAliveSnakesCount()
+                    - gameInfo.getFoods().size());
         }
+    }
+
+    private Coord getHeadCoord(Snake snake) {
+        int headX = snake.getCoordList().get(0).getX();
+        int headY = snake.getCoordList().get(0).getY();
+        Direction headDirection = snake.getHeadDirection();
+
+        int newHeadX = headX;
+        int newHeadY = headY;
+
+        if (headDirection == UP) {
+            newHeadY--;
+        } else if (headDirection == DOWN) {
+            newHeadY++;
+        } else if (headDirection == LEFT) {
+            newHeadX--;
+        } else if (headDirection == RIGHT) {
+            newHeadX++;
+        }
+
+        newHeadX = (newHeadX + gameInfo.getWidth()) % gameInfo.getWidth();
+        newHeadY = (newHeadY + gameInfo.getHeight()) % gameInfo.getHeight();
+
+        return new Coord(newHeadX, newHeadY);
     }
 
     /**
      * Обработчик съеденной еды
      */
     private void handlerEatenFood() {
-        gameInfo.setIncrease(false);
+
+        isIncrease.clear();
+
         List<Integer> foodCoords = new ArrayList<>();
         for (Coord coord : gameInfo.getFoods()) {
             foodCoords.add(coord.getY() * gameInfo.getWidth() + coord.getX());
         }
 
         for (Snake snake : gameInfo.getSnakes()) {
+            int indexGamePlayer = findPlayerIndexById(snake.getPlayerId());
+
             for (int x : foodCoords) {
                 if (snake.getCoordList().get(0).getY() * gameInfo.getWidth() +
                         snake.getCoordList().get(0).getX() == x) {
-                    int indexPlayer = findPlayerIndexById(snake.getPlayerId());
-                    GamePlayer gamePlayer = gameInfo.getGamePlayers().get(indexPlayer);
+
+                    GamePlayer gamePlayer = gameInfo.getGamePlayers().get(indexGamePlayer);
                     gamePlayer.setScore(gamePlayer.getScore() + 1);
-                    gameInfo.setScore(gamePlayer.getScore() + 1);
 
                     int index = findFoodIndexByInt(x);
                     gameInfo.getFoods().remove(index);
 
-                    gameInfo.setIncrease(true);
+                    isIncrease.add(gamePlayer.getId());
                     break;
                 }
             }
@@ -131,48 +140,57 @@ public class GameControlService {
      * Обработчик столкновений.
      */
     private void intersectionHandler() {
-        List<List<Integer>> snakesCoords = new ArrayList<>();
+        List<List<Integer>> snakesCoordsLists = new ArrayList<>();
+
         for (Snake snake : gameInfo.getSnakes()) {
             List<Integer> newList = new ArrayList<>();
             for (Coord coord : snake.getCoordList()) {
                 newList.add(coord.getY() * gameInfo.getWidth() + coord.getX());
             }
-            snakesCoords.add(newList);
+            snakesCoordsLists.add(newList);
         }
 
-        for (int i = 0; i < snakesCoords.size(); i++) {
-            for (int j = 0; j < snakesCoords.size(); j++) {
+        Set<Integer> killedSnakesPlayersId = new HashSet<>();
+
+        for (int i = 0; i < snakesCoordsLists.size(); i++) {
+            for (int j = 0; j < snakesCoordsLists.size(); j++) {
                 if (i != j) {
                     //случай когда две разные змейки
-                    for (int k = 0; k < snakesCoords.get(j).size(); k++) {
-                        if (snakesCoords.get(i).get(0) == snakesCoords.get(j).get(k)) {
+                    for (int k = 0; k < snakesCoordsLists.get(j).size(); k++) {
+
+                        if (Objects.equals(snakesCoordsLists.get(i).get(0), snakesCoordsLists.get(j).get(k))) {
+
+                            int gamePlayerId = gameInfo.getSnakes().get(j).getPlayerId();
+                            int gamePlayerId_ = gameInfo.getSnakes().get(i).getPlayerId();
+
                             if (k != 0) {
-                                int gamePlayerIndex = gameInfo.getSnakes().get(j).getPlayerId();
-                                addPointToGamePlayer(gamePlayerIndex);
-
-                                killSnake(i);
-
+                                addPointToGamePlayer(gamePlayerId);
                             } else {
-                                killSnake(i);
-                                killSnake(j);
+                                killedSnakesPlayersId.add(gamePlayerId_);
                             }
+
+                            killedSnakesPlayersId.add(gamePlayerId);
                         }
                     }
                 } else {
                     // обработка столкновения змейки с самой собой
                     Set<Integer> set = new HashSet<>();
                     List<Object> duplicates = new ArrayList<>();
-                    snakesCoords.get(i).forEach(n -> {
+                    snakesCoordsLists.get(i).forEach(n -> {
                         if (!set.add(n)) {
                             duplicates.add(n);
                         }
                     });
 
                     if (!duplicates.isEmpty()) {
-                        killSnake(i);
+                        killedSnakesPlayersId.add(gameInfo.getSnakes().get(j).getPlayerId());
                     }
                 }
             }
+        }
+
+        for (int id : killedSnakesPlayersId.stream().toList()) {
+            killSnake(id);
         }
     }
 
@@ -193,6 +211,15 @@ public class GameControlService {
     private int findPlayerIndexById(long id) {
         for (int i = 0; i < gameInfo.getGamePlayers().size(); i++) {
             if (gameInfo.getGamePlayers().get(i).getId() == id) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private int findSnakeIndexByPlayerId(long id) {
+        for (int i = 0; i < gameInfo.getSnakes().size(); i++) {
+            if (gameInfo.getSnakes().get(i).getPlayerId() == id) {
                 return i;
             }
         }
@@ -220,12 +247,21 @@ public class GameControlService {
         gameInfo.getGamePlayers().remove(index);
     }
 
-    private void killSnake(int i) {
-        int gamePlayerIndex = gameInfo.getSnakes().get(i).getPlayerId();
-        Snake copySnake = gameInfo.getSnakes().get(i);
-        gameInfo.getSnakes().remove(i);
+    private void killSnake(int playerId) {
+
+        Snake copySnake = gameInfo.getSnakes().get(findSnakeIndexByPlayerId(playerId));
+        removeSnakeById(playerId);
         generateRandomFoodAfterSnakeDeath(copySnake);
-        deleteGamePlayer(gamePlayerIndex);
+        deleteGamePlayer(findPlayerIndexById(playerId));
+    }
+
+    private void removeSnakeById(int gamePlayerId) {
+        for (int i = 0; i < gameInfo.getSnakes().size(); i++) {
+            if (gameInfo.getSnakes().get(i).getPlayerId() == gamePlayerId) {
+                gameInfo.getSnakes().remove(i);
+                break;
+            }
+        }
     }
 
     /**

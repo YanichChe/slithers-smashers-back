@@ -93,7 +93,11 @@ public class UnicastService {
             SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage.parseFrom(data);
 
             switch (gameMessage.getTypeCase()) {
-                case STATE -> gameControlService.updateState(gameMessage.getState());
+                case STATE -> {
+                    if(!gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
+                        gameControlService.updateState(gameMessage.getState());
+                    }
+                }
 
                 case DISCOVER -> {
                     SnakesProto.GameMessage gameMessageNew = generateAnnouncementMessage();
