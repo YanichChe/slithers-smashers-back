@@ -5,11 +5,8 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.GamesListMsg;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.GameStateMsg;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.JoinMsg;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.*;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GameAnnouncement;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.Steer;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GamesInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GamePlayer;
@@ -20,7 +17,9 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.net.UnicastServic
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/player")
@@ -40,7 +39,7 @@ public class PlayerController {
     public ResponseEntity<GameStateMsg> getGameState() {
 
         boolean isAlive = false;
-        for (GamePlayer gamePlayer: gameInfo.getGamePlayers()) {
+        for (GamePlayer gamePlayer : gameInfo.getGamePlayers()) {
             if (gamePlayer.getId() == gameInfo.getPlayerId()) {
                 isAlive = true;
                 break;
@@ -115,6 +114,23 @@ public class PlayerController {
         GamesListMsg gamesListMsg = new GamesListMsg(gameNames);
 
         return ResponseEntity.ok().body(gamesListMsg);
+    }
+
+
+    /**
+     * @return сообщение со списком игроков и их очков
+     */
+    @GetMapping("/get-players-table")
+    public ResponseEntity<GamePlayersTable> getPlayersTable() {
+        Map<String, Integer> message =new HashMap<>();
+
+        GamePlayersTable gamePlayersTable = new GamePlayersTable();
+
+        for (GamePlayer gamePlayer : gameInfo.getGamePlayers()) {
+            gamePlayersTable.getGamePlayerTable().put(gamePlayer.getName(), gamePlayer.getScore());
+        }
+
+        return ResponseEntity.ok().body(gamePlayersTable);
     }
 
     /**
