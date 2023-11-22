@@ -243,8 +243,8 @@ public class GameControlService {
         gameInfo.getGamePlayers().get(index).setScore(gameInfo.getGamePlayers().get(index).getScore() + 1);
     }
 
-    private void deleteGamePlayer(int index) {
-        gameInfo.getGamePlayers().remove(index);
+    private void killGamePlayer(int index) {
+        gameInfo.getGamePlayers().get(index).setId(ID_ENUM.DELETED.getValue());
     }
 
     private void killSnake(int playerId) {
@@ -252,7 +252,7 @@ public class GameControlService {
         Snake copySnake = gameInfo.getSnakes().get(findSnakeIndexByPlayerId(playerId));
         removeSnakeById(playerId);
         generateRandomFoodAfterSnakeDeath(copySnake);
-        deleteGamePlayer(findPlayerIndexById(playerId));
+        killGamePlayer(findPlayerIndexById(playerId));
     }
 
     private void removeSnakeById(int gamePlayerId) {

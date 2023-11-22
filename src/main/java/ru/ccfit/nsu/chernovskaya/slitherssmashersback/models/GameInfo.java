@@ -4,10 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.stereotype.Component;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.Coord;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GameConfig;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GamePlayer;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.Snake;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +28,7 @@ public class GameInfo {
     private int masterPort;
 
     private String playerName;
-    private int playerId = -1;
+    private int playerId = ID_ENUM.UNDEFINED.getValue();
 
     private boolean isAlive;
     private int score = 0;

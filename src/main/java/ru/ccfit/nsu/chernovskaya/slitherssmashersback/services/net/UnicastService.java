@@ -15,6 +15,7 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GamePlayer;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.mapper.ProtobufMapper;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.ID_ENUM;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.GameControlService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.MasterService;
 
@@ -114,12 +115,12 @@ public class UnicastService {
 
                 case ACK -> {
                     receivedAck = gameMessage.getMsgSeq();
-                    if (gameInfo.getPlayerId() == -1) gameInfo.setPlayerId(gameMessage.getReceiverId());
+                    if (gameInfo.getPlayerId() == ID_ENUM.UNDEFINED.getValue()) gameInfo.setPlayerId(gameMessage.getReceiverId());
                 }
 
                 case ERROR -> {
                     receivedAck = -2;
-                    gameInfo.setPlayerId(-1);
+                    gameInfo.setPlayerId(ID_ENUM.UNDEFINED.getValue());
                 }
 
                 case STEER -> {

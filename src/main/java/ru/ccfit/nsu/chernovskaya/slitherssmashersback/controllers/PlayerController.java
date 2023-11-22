@@ -12,6 +12,8 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GameAnnounceme
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.Steer;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GamesInfo;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GamePlayer;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.ID_ENUM;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.MasterService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.net.UnicastService;
 
@@ -37,13 +39,24 @@ public class PlayerController {
     @GetMapping("/game-state")
     public ResponseEntity<GameStateMsg> getGameState() {
 
+        boolean isAlive = false;
+        for (GamePlayer gamePlayer: gameInfo.getGamePlayers()) {
+            if (gamePlayer.getId() == gameInfo.getPlayerId()) {
+                isAlive = true;
+                break;
+            }
+        }
+
+        if (gameInfo.getPlayerId() == ID_ENUM.UNDEFINED.getValue()) isAlive = true;
+        log.info(gameInfo.getPlayerId());
+
         GameStateMsg gameStateMsg = new GameStateMsg(gameInfo.getGamePlayers(),
                 gameInfo.getSnakes(),
                 gameInfo.getFoods(),
-                gameInfo.isAlive(),
+                isAlive,
                 gameInfo.getScore());
 
-        log.debug(gameInfo.getSnakes());
+        log.info(gameStateMsg);
         return ResponseEntity.ok()
                 .body(gameStateMsg);
     }
