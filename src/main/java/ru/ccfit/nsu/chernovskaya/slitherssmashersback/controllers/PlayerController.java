@@ -122,7 +122,6 @@ public class PlayerController {
      */
     @GetMapping("/get-players-table")
     public ResponseEntity<GamePlayersTable> getPlayersTable() {
-        Map<String, Integer> message =new HashMap<>();
 
         GamePlayersTable gamePlayersTable = new GamePlayersTable();
 
