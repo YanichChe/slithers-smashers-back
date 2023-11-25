@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.Coord;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.Direction;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GamePlayer;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.Snake;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.mapper.ProtobufMapper;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
@@ -28,7 +29,26 @@ public class MasterService {
      * @param port       порт нового игрока
      * @return Сообщение об ошибке или ответный успех с id игроком
      */
-    public SnakesProto.GameMessage joinHandler(String playerName, String ipAddress, int port) {
+    public SnakesProto.GameMessage joinHandler(String playerName, String ipAddress, int port, long msgSeq) {
+
+        List<GamePlayer> gamePlayerList = gameInfo.getGamePlayers();
+        synchronized (gamePlayerList) {
+            for (GamePlayer gamePlayer: gamePlayerList) {
+                if (gamePlayer.getAddress().equals(ipAddress) && gamePlayer.getPort() == port) {
+                    SnakesProto.GameMessage.ErrorMsg errorMsg = SnakesProto.GameMessage.ErrorMsg
+                            .newBuilder()
+                            .setErrorMessage("you are in game")
+                            .build();
+
+                    return SnakesProto.GameMessage
+                            .newBuilder()
+                            .setError(errorMsg)
+                            .setMsgSeq(gameInfo.getIncrementMsgSeq())
+                            .build();
+                }
+            }
+        }
+
         int id = connectionService.createNewGamePlayer(playerName, SnakesProto.NodeRole.NORMAL, ipAddress, port);
 
         Coord[] coords = connectionService.searchPlace();
@@ -37,20 +57,19 @@ public class MasterService {
                     .newBuilder()
                     .setErrorMessage("not found place")
                     .build();
-            SnakesProto.GameMessage gameMessageNew = SnakesProto.GameMessage
+
+            return SnakesProto.GameMessage
                     .newBuilder()
                     .setError(errorMsg)
                     .setMsgSeq(gameInfo.getIncrementMsgSeq())
                     .build();
-
-            return gameMessageNew;
 
         } else {
             SnakesProto.GameMessage gameMessageNew = SnakesProto.GameMessage
                     .newBuilder()
                     .setAck(SnakesProto.GameMessage.AckMsg.newBuilder().build())
                     .setReceiverId(id)
-                    .setMsgSeq(gameInfo.getIncrementMsgSeq())
+                    .setMsgSeq(msgSeq)
                     .build();
             connectionService.createNewSnake(coords, id);
             return gameMessageNew;
