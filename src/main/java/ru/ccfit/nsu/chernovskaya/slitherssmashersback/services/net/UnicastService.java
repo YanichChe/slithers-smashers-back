@@ -1,6 +1,5 @@
 package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.net;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -22,13 +21,16 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.MasterServ
 import java.io.IOException;
 import java.net.*;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Service
 @Log4j2
 @RequiredArgsConstructor
 public class UnicastService {
 
-    private long receivedAck = -1;
+    Set<Long> receivedAckSet = new HashSet<>();
 
     @Value("${state.delay.ms}")
     private long stateDelayMs;
@@ -62,23 +64,44 @@ public class UnicastService {
      * @param gameMessage сообщение
      * @param inetAddress адрес получателя
      * @param port        порт получателя
+     * @param wait        флаг, нужно ли ожидать ответ от получателя
      */
-    public void sendMessage(SnakesProto.GameMessage gameMessage, InetAddress inetAddress, int port) {
+    public void sendMessage(SnakesProto.GameMessage gameMessage, InetAddress inetAddress, int port, boolean wait) {
         try {
             byte[] buf = gameMessage.toByteArray();
 
             DatagramPacket packet = new DatagramPacket(buf, buf.length,
                     inetAddress, port);
             datagramSocket.send(packet);
-        } catch (IOException e) {
+
+            if (wait) {
+                waitAck(gameMessage.getMsgSeq(), gameMessage, inetAddress, port);
+            }
+
+        } catch (IOException | InterruptedException e) {
             log.error(e.getMessage());
         }
     }
 
     /**
-     * Обработчик полученных сообщений.
+     * Отправка подтверждающего сообщения.
      *
-     * @throws IOException
+     * @param msgSeq  номер сообщения
+     * @param address адрес получателя
+     * @param port    порт получателя
+     */
+    private void sendAckMessage(long msgSeq, InetAddress address, int port) {
+        SnakesProto.GameMessage message = SnakesProto.GameMessage
+                .newBuilder()
+                .setAck(SnakesProto.GameMessage.AckMsg.newBuilder().build())
+                .setMsgSeq(msgSeq)
+                .build();
+
+        sendMessage(message, address, port, false);
+    }
+
+    /**
+     * Обработчик полученных сообщений.
      */
     @Async
     @EventListener(ApplicationReadyEvent.class)
@@ -95,37 +118,44 @@ public class UnicastService {
 
             switch (gameMessage.getTypeCase()) {
                 case STATE -> {
-                    if(!gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
+                    if (gameInfo.getNodeRole() != null && !gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
                         gameControlService.updateState(gameMessage.getState());
+                        sendAckMessage(gameMessage.getMsgSeq(), packet.getAddress(), packet.getPort());
                     }
                 }
 
                 case DISCOVER -> {
                     SnakesProto.GameMessage gameMessageNew = generateAnnouncementMessage();
-                    sendMessage(gameMessageNew, packet.getAddress(), packet.getPort());
+                    sendMessage(gameMessageNew, packet.getAddress(), packet.getPort(), false);
                 }
 
                 case JOIN -> {
                     SnakesProto.GameMessage gameMessageNew =
                             masterService.joinHandler(gameMessage.getJoin().getPlayerName(),
-                                    packet.getAddress().getHostAddress(), packet.getPort());
+                                    packet.getAddress().getHostAddress(), packet.getPort(), gameMessage.getMsgSeq());
 
-                    sendMessage(gameMessageNew, packet.getAddress(), packet.getPort());
+                    sendMessage(gameMessageNew, packet.getAddress(), packet.getPort(), true);
                 }
 
                 case ACK -> {
-                    receivedAck = gameMessage.getMsgSeq();
-                    if (gameInfo.getPlayerId() == ID_ENUM.UNDEFINED.getValue()) gameInfo.setPlayerId(gameMessage.getReceiverId());
+                    receivedAckSet.add(gameMessage.getMsgSeq());
+                    if (gameInfo.getPlayerId() == ID_ENUM.UNDEFINED.getValue())
+                        gameInfo.setPlayerId(gameMessage.getReceiverId());
                 }
 
                 case ERROR -> {
-                    receivedAck = -2;
-                    gameInfo.setPlayerId(ID_ENUM.UNDEFINED.getValue());
+                    receivedAckSet.add(gameMessage.getMsgSeq());
+
+                    if (gameInfo.getPlayerId() != ID_ENUM.UNDEFINED.getValue()) break;
+
+                    gameInfo.setPlayerId(ID_ENUM.NOT_JOIN.getValue());
+                    sendAckMessage(gameMessage.getMsgSeq(), packet.getAddress(), packet.getPort());
                 }
 
                 case STEER -> {
                     masterService.changeSnakeDirection(gameMessage.getSenderId(),
                             gameMessage.getSteer().getDirection());
+                    sendAckMessage(gameMessage.getMsgSeq(), packet.getAddress(), packet.getPort());
                 }
                 case TYPE_NOT_SET -> log.error("wrong type message");
             }
@@ -136,8 +166,6 @@ public class UnicastService {
 
     /**
      * Отправка всем участникам игры сообщение о состоянии игры.
-     *
-     * @throws UnknownHostException
      */
     @Async
     @Scheduled(fixedRateString = "${state.delay.ms}")
@@ -169,34 +197,33 @@ public class UnicastService {
                     .setState(stateMsg)
                     .build();
 
-            for (GamePlayer gamePlayer : gameInfo.getGamePlayers()) {
-                if (!gamePlayer.getAddress().equals("localhost"))
-                    sendMessage(gameMessage, InetAddress.getByName(gamePlayer.getAddress()), gamePlayer.getPort());
+            List<GamePlayer> gamePlayerList = gameInfo.getGamePlayers();
+
+            synchronized (gamePlayerList) {
+                for (GamePlayer gamePlayer : gamePlayerList) {
+                    if (!gamePlayer.getAddress().equals("localhost"))
+                        sendMessage(gameMessage, InetAddress.getByName(gamePlayer.getAddress()), gamePlayer.getPort(),
+                                true);
+                }
             }
         }
     }
 
-    public int waitAck(long expectedMsgSeq, SnakesProto.GameMessage gameMessage) throws UnknownHostException,
-            InterruptedException {
+    @Async
+    public void waitAck(long expectedMsgSeq, SnakesProto.GameMessage gameMessage, InetAddress address, int port)
+            throws UnknownHostException, InterruptedException {
 
+        /*for (int i = 0; i < 10; i++) {
 
-        for (int i = 0; i < 10; i++) {
-
-            if (receivedAck == -2) {
-                receivedAck = -1;
-                return 0;
+            if (receivedAckSet.contains(expectedMsgSeq)) {
+                receivedAckSet.remove(expectedMsgSeq);
+                return;
             }
 
-            if (expectedMsgSeq == receivedAck) {
-                return 1;
-            }
+            sendMessage(gameMessage, address, port, false);
 
-            sendMessage(gameMessage, InetAddress.getByName(gameInfo.getMasterInetAddress()),
-                    gameInfo.getMasterPort());
-
-            wait(stateDelayMs / 10);
-        }
-        return 0;
+            Thread.sleep(stateDelayMs);
+        }*/
     }
 
     /**
@@ -243,11 +270,9 @@ public class UnicastService {
                         .addGames(gameAnnouncement)
                         .build();
 
-        SnakesProto.GameMessage gameMessageNew = SnakesProto.GameMessage.newBuilder()
+        return SnakesProto.GameMessage.newBuilder()
                 .setMsgSeq(gameInfo.getIncrementMsgSeq())
                 .setAnnouncement(announcementMsg)
                 .build();
-
-        return gameMessageNew;
     }
 }
