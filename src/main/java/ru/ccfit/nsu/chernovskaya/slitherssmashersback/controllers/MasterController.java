@@ -1,5 +1,6 @@
 package ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +14,7 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.ConnectionService;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/master")
 @Log4j2
 public class MasterController {
@@ -21,12 +23,6 @@ public class MasterController {
     private final ConnectionService connectionService;
     @Value(value = "${state.delay.ms}")
     private int stateDelayMs;
-
-    @Autowired
-    public MasterController(GameInfo gameInfo, ConnectionService connectionService) {
-        this.gameInfo = gameInfo;
-        this.connectionService = connectionService;
-    }
 
     /**
      * Инициализация запуска игры.

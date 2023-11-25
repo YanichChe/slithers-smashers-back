@@ -13,6 +13,7 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GamePlayer;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.ID_ENUM;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.MasterService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.net.UnicastService;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.player.PlayerService;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -29,6 +30,7 @@ public class PlayerController {
     private final GamesInfo gamesInfo;
     private final UnicastService sender;
     private final MasterService masterService;
+    private final PlayerService playerService;
 
     /**
      * @return состояние игры
@@ -36,24 +38,8 @@ public class PlayerController {
     @GetMapping("/game-state")
     public ResponseEntity<GameStateMsg> getGameState() {
 
-        boolean isAlive = false;
-        for (GamePlayer gamePlayer : gameInfo.getGamePlayers()) {
-            if (gamePlayer.getId() == gameInfo.getPlayerId()) {
-                isAlive = true;
-                break;
-            }
-        }
-
-        if (gameInfo.getPlayerId() == ID_ENUM.UNDEFINED.getValue()) isAlive = true;
-
-        GameStateMsg gameStateMsg = new GameStateMsg(gameInfo.getGamePlayers(),
-                gameInfo.getSnakes(),
-                gameInfo.getFoods(),
-                isAlive,
-                gameInfo.getScore());
-
         return ResponseEntity.ok()
-                .body(gameStateMsg);
+                .body(playerService.generateGameStateMessage());
     }
 
     /**
@@ -70,21 +56,10 @@ public class PlayerController {
             InterruptedException {
 
         if (gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
-            masterService.changeSnakeDirection(0, steer.getheadDirection());
+            masterService.changeSnakeDirection(gameInfo.getPlayerId(), steer.getheadDirection());
         } else {
-            SnakesProto.GameMessage.SteerMsg steerMsg = SnakesProto.GameMessage.SteerMsg
-                    .newBuilder()
-                    .setDirection(steer.getheadDirection())
-                    .build();
-
-            SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage
-                    .newBuilder()
-                    .setSteer(steerMsg)
-                    .setMsgSeq(gameInfo.getIncrementMsgSeq())
-                    .setSenderId(gameInfo.getPlayerId())
-                    .build();
-
-            sender.sendMessage(gameMessage, InetAddress.getByName(gameInfo.getMasterInetAddress()),
+            sender.sendMessage(playerService.generateSteerMessage(steer),
+                    InetAddress.getByName(gameInfo.getMasterInetAddress()),
                     gameInfo.getMasterPort(), true);
         }
 
@@ -99,18 +74,8 @@ public class PlayerController {
     @GetMapping("/games-list")
     public ResponseEntity<GamesListMsg> getGamesList() {
 
-        List<String> gameNames = new ArrayList<>();
-        for (GameAnnouncement gameAnnouncement : gamesInfo.getGameAnnouncementMap().values()) {
-            if (gameAnnouncement.isCanJoin()) {
-                gameNames.add(gameAnnouncement.getGameName());
-            }
-        }
-
-        GamesListMsg gamesListMsg = new GamesListMsg(gameNames);
-
-        return ResponseEntity.ok().body(gamesListMsg);
+        return ResponseEntity.ok().body(playerService.generateGamesListMsg());
     }
-
 
     /**
      * @return сообщение со списком игроков и их очков
@@ -118,14 +83,7 @@ public class PlayerController {
     @GetMapping("/players-table")
     public ResponseEntity<GamePlayersTable> getPlayersTable() {
 
-        GamePlayersTable gamePlayersTable = new GamePlayersTable();
-
-        for (GamePlayer gamePlayer : gameInfo.getGamePlayers()) {
-            log.info("player" + gamePlayer.getName());
-            gamePlayersTable.getGamePlayerTable().put(gamePlayer.getName(), gamePlayer.getScore());
-        }
-
-        return ResponseEntity.ok().body(gamePlayersTable);
+        return ResponseEntity.ok().body(playerService.generateGamePlayersTable());
     }
 
     /**
@@ -137,39 +95,17 @@ public class PlayerController {
     @PostMapping("/join")
     public ResponseEntity<String> sendJoinMessage(@RequestBody JoinMsg joinMsgRequest) {
 
-        SnakesProto.GameMessage.JoinMsg joinMsg = SnakesProto.GameMessage.JoinMsg
-                .newBuilder()
-                .setPlayerName(joinMsgRequest.getPlayerName())
-                .setGameName(joinMsgRequest.getGameName())
-                .setRequestedRole(SnakesProto.NodeRole.NORMAL)
-                .build();
-
-        SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage
-                .newBuilder()
-                .setJoin(joinMsg)
-                .setMsgSeq(gameInfo.getIncrementMsgSeq())
-                .build();
-
-        GameAnnouncement gameAnnouncement = gamesInfo.getGameAnnouncementMap().get(joinMsg.getGameName());
-
-        sender.sendMessage(gameMessage, gameAnnouncement.getMasterAddress(),
+        GameAnnouncement gameAnnouncement = gamesInfo.getGameAnnouncementMap().get(joinMsgRequest.getGameName());
+        sender.sendMessage(playerService.generateJoinMessage(joinMsgRequest.getPlayerName(),
+                        joinMsgRequest.getGameName()), gameAnnouncement.getMasterAddress(),
                 gameAnnouncement.getMasterPort(), true);
 
         while (true) {
             if (gameInfo.getPlayerId() != ID_ENUM.UNDEFINED.getValue()) break;
         }
-
         if (gameInfo.getPlayerId() == ID_ENUM.NOT_JOIN.getValue()) return ResponseEntity.ok("not enough place");
 
-        gameInfo.setMasterInetAddress(gameAnnouncement.getMasterAddress().getHostAddress());
-        gameInfo.setMasterPort(gameAnnouncement.getMasterPort());
-
-        gameInfo.setNodeRole(SnakesProto.NodeRole.NORMAL);
-        gameInfo.setGameConfig(gameAnnouncement.getConfig());
-        gameInfo.setCanJoin(gameAnnouncement.isCanJoin());
-        gameInfo.setGameName(gameAnnouncement.getGameName());
-        gameInfo.setAlive(true);
-
+        playerService.setGameData(gameAnnouncement);
         return ResponseEntity.ok("join");
     }
 }

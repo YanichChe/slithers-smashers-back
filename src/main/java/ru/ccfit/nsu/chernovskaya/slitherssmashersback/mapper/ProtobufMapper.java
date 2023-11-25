@@ -151,27 +151,24 @@ public class ProtobufMapper {
     }
 
     public SnakesProto.GameConfig map(GameConfig gameConfigDTO) {
-        SnakesProto.GameConfig gameConfig = SnakesProto.GameConfig
+
+        return SnakesProto.GameConfig
                 .newBuilder()
                 .setHeight(gameConfigDTO.getHeight())
                 .setWidth(gameConfigDTO.getWidth())
                 .setStateDelayMs(gameConfigDTO.getStateDelayMs())
                 .setFoodStatic(gameConfigDTO.getFoodStatic())
                 .build();
-
-        return gameConfig;
     }
 
     public GameConfig map(SnakesProto.GameConfig gameConfig) {
 
-        GameConfig gameConfigDTO = new GameConfig(
+        return new GameConfig(
                 gameConfig.getWidth(),
                 gameConfig.getHeight(),
                 gameConfig.getFoodStatic(),
                 gameConfig.getStateDelayMs()
         );
-
-        return gameConfigDTO;
     }
 
     public List<SnakesProto.GameState.Snake> map(List<Snake> snakeDTOS) {
@@ -205,7 +202,7 @@ public class ProtobufMapper {
     public List<SnakesProto.GameState.Coord> mapToFoodProto(List<Coord> foods) {
         List<SnakesProto.GameState.Coord> coordList = new ArrayList<>();
 
-        for (Coord coord: foods) {
+        for (Coord coord : foods) {
             SnakesProto.GameState.Coord coordProto = SnakesProto.GameState.Coord
                     .newBuilder()
                     .setX(coord.getX())
