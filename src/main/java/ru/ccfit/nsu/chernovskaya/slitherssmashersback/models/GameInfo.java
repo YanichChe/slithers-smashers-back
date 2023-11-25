@@ -7,6 +7,7 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Component
@@ -20,7 +21,7 @@ public class GameInfo {
 
     private List<Snake> snakes = new ArrayList<>();
     private List<Coord> foods = new ArrayList<>();
-    private List<GamePlayer> gamePlayers = new ArrayList<>();
+    private List<GamePlayer> gamePlayers = Collections.synchronizedList(new ArrayList<>());
 
     private int height;
     private int width;
@@ -30,7 +31,7 @@ public class GameInfo {
     private String playerName;
     private int playerId = ID_ENUM.UNDEFINED.getValue();
 
-    private boolean isAlive;
+    private boolean isAlive = true;
     private int score = 0;
 
     private long msqSeq = -1;
