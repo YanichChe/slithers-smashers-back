@@ -68,12 +68,12 @@ public class FoodService {
 
         for (Snake snake : gameInfo.getSnakes()) {
             for (Coord coord : snake.getCoordList()) {
-                occupiedCoords.add(coord.getY() * height + coord.getX());
+                occupiedCoords.add(coord.getY() * width + coord.getX());
             }
         }
 
         for (Coord coord : gameInfo.getFoods()) {
-            occupiedCoords.add(coord.getY() * height + coord.getX());
+            occupiedCoords.add(coord.getY() * width + coord.getX());
         }
 
         for (Integer coord : coords) {
