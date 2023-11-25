@@ -37,6 +37,9 @@ public class GameControlService {
         gameInfo.setSnakes(gameState.getSnakes());
         gameInfo.setStateOrder(gameState.getStateOrder());
         gameInfo.setFoods(gameState.getFoods());
+
+        int myIndex = findPlayerIndexById(gameInfo.getPlayerId());
+        gameInfo.setScore(gameInfo.getGamePlayers().get(myIndex).getScore());
     }
 
     /**
@@ -156,15 +159,17 @@ public class GameControlService {
             for (int j = 0; j < snakesCoordsLists.size(); j++) {
                 if (i != j) {
                     //случай когда две разные змейки
+                    //идем по координатам второй змейки
                     for (int k = 0; k < snakesCoordsLists.get(j).size(); k++) {
 
+                        //если координаты головы первой змейки совпали с координатами второй змейки
                         if (Objects.equals(snakesCoordsLists.get(i).get(0), snakesCoordsLists.get(j).get(k))) {
 
-                            int gamePlayerId = gameInfo.getSnakes().get(j).getPlayerId();
-                            int gamePlayerId_ = gameInfo.getSnakes().get(i).getPlayerId();
+                            int gamePlayerId = gameInfo.getSnakes().get(i).getPlayerId();
+                            int gamePlayerId_ = gameInfo.getSnakes().get(j).getPlayerId();
 
                             if (k != 0) {
-                                addPointToGamePlayer(gamePlayerId);
+                                addPointToGamePlayer(gamePlayerId_);
                             } else {
                                 killedSnakesPlayersId.add(gamePlayerId_);
                             }
