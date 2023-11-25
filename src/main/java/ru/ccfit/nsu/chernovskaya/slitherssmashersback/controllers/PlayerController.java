@@ -17,9 +17,7 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.net.UnicastServic
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/player")
@@ -47,7 +45,6 @@ public class PlayerController {
         }
 
         if (gameInfo.getPlayerId() == ID_ENUM.UNDEFINED.getValue()) isAlive = true;
-        log.info(gameInfo.getPlayerId());
 
         GameStateMsg gameStateMsg = new GameStateMsg(gameInfo.getGamePlayers(),
                 gameInfo.getSnakes(),
@@ -55,7 +52,6 @@ public class PlayerController {
                 isAlive,
                 gameInfo.getScore());
 
-        log.info(gameStateMsg);
         return ResponseEntity.ok()
                 .body(gameStateMsg);
     }
@@ -89,8 +85,7 @@ public class PlayerController {
                     .build();
 
             sender.sendMessage(gameMessage, InetAddress.getByName(gameInfo.getMasterInetAddress()),
-                    gameInfo.getMasterPort());
-            //sender.waitAck(gameInfo.getMsqSeq(), gameMessage);
+                    gameInfo.getMasterPort(), true);
         }
 
         return ResponseEntity.ok("update request");
@@ -120,12 +115,13 @@ public class PlayerController {
     /**
      * @return сообщение со списком игроков и их очков
      */
-    @GetMapping("/get-players-table")
+    @GetMapping("/players-table")
     public ResponseEntity<GamePlayersTable> getPlayersTable() {
 
         GamePlayersTable gamePlayersTable = new GamePlayersTable();
 
         for (GamePlayer gamePlayer : gameInfo.getGamePlayers()) {
+            log.info("player" + gamePlayer.getName());
             gamePlayersTable.getGamePlayerTable().put(gamePlayer.getName(), gamePlayer.getScore());
         }
 
@@ -136,7 +132,7 @@ public class PlayerController {
      * Запрос на подключение к игре
      *
      * @param joinMsgRequest данные запроса на подключения.
-     * @return сообщение об успехе присоединения.
+     * @return сообщение об успехе/не успехе присоединения.
      */
     @PostMapping("/join")
     public ResponseEntity<String> sendJoinMessage(@RequestBody JoinMsg joinMsgRequest) {
@@ -152,19 +148,18 @@ public class PlayerController {
                 .newBuilder()
                 .setJoin(joinMsg)
                 .setMsgSeq(gameInfo.getIncrementMsgSeq())
-                .setReceiverId(0)
                 .build();
-
 
         GameAnnouncement gameAnnouncement = gamesInfo.getGameAnnouncementMap().get(joinMsg.getGameName());
 
         sender.sendMessage(gameMessage, gameAnnouncement.getMasterAddress(),
-                gameAnnouncement.getMasterPort());
+                gameAnnouncement.getMasterPort(), true);
 
-        /*int error = unicastMessageService.waitAck(gameInfo.getMsqSeq(), gameMessage);
-        if (error == 0) {
-            return ResponseEntity.ok("not found place");
-        }*/
+        while (true) {
+            if (gameInfo.getPlayerId() != ID_ENUM.UNDEFINED.getValue()) break;
+        }
+
+        if (gameInfo.getPlayerId() == ID_ENUM.NOT_JOIN.getValue()) return ResponseEntity.ok("not enough place");
 
         gameInfo.setMasterInetAddress(gameAnnouncement.getMasterAddress().getHostAddress());
         gameInfo.setMasterPort(gameAnnouncement.getMasterPort());
