@@ -87,14 +87,14 @@ public class MasterService {
         for (Snake snake : snakes) {
 
             if (snake.getPlayerId() == playerId) {
-                if (snake.getHeadDirection().equals(Direction.UP) &&
-                        direction.equals(Direction.DOWN)
-                        || snake.getHeadDirection().equals(Direction.DOWN) &&
-                        direction.equals(SnakesProto.Direction.UP)
-                        || snake.getHeadDirection().equals(Direction.RIGHT) &&
-                        direction.equals(Direction.LEFT)
-                        || snake.getHeadDirection().equals(Direction.LEFT) &&
-                        direction.equals(Direction.RIGHT)
+                if ((snake.getHeadDirection().equals(Direction.UP) &&
+                        direction.equals(SnakesProto.Direction.DOWN))
+                        || (snake.getHeadDirection().equals(Direction.DOWN) &&
+                        direction.equals(SnakesProto.Direction.UP))
+                        || (snake.getHeadDirection().equals(Direction.RIGHT) &&
+                        direction.equals(SnakesProto.Direction.LEFT))
+                        || (snake.getHeadDirection().equals(Direction.LEFT) &&
+                        direction.equals(SnakesProto.Direction.RIGHT))
                 ) break;
                 snake.setHeadDirection(mapper.map(direction));
 
@@ -102,6 +102,4 @@ public class MasterService {
             }
         }
     }
-
-
 }
