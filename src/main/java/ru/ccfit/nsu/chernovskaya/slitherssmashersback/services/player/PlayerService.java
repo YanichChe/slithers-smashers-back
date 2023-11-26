@@ -24,8 +24,11 @@ public class PlayerService {
     private final GamesInfo gamesInfo;
 
     public void setGameData(GameAnnouncement gameAnnouncement) {
+        gameInfo.setGameConfig(gameAnnouncement.getConfig());
         gameInfo.setMasterInetAddress(gameAnnouncement.getMasterAddress().getHostAddress());
         gameInfo.setMasterPort(gameAnnouncement.getMasterPort());
+        gameInfo.setHeight(gameAnnouncement.getConfig().getHeight());
+        gameInfo.setWidth(gameAnnouncement.getConfig().getWidth());
 
         gameInfo.setNodeRole(SnakesProto.NodeRole.NORMAL);
         gameInfo.setGameConfig(gameAnnouncement.getConfig());

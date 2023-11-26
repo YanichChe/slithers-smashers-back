@@ -39,8 +39,8 @@ public class GameControlService {
         gameInfo.setFoods(gameState.getFoods());
 
         int myIndex = findPlayerIndexById(gameInfo.getPlayerId());
-        log.info(myIndex+ " " + gameInfo.getScore());
-        gameInfo.setScore(gameInfo.getGamePlayers().get(myIndex).getScore());
+
+        if (myIndex != -1) gameInfo.setScore(gameInfo.getGamePlayers().get(myIndex).getScore());
     }
 
     /**
@@ -255,7 +255,8 @@ public class GameControlService {
     }
 
     private void killGamePlayer(int index) {
-        gameInfo.getGamePlayers().get(index).setId(ID_ENUM.DELETED.getValue());
+        if (index != -1)
+            gameInfo.getGamePlayers().get(index).setId(ID_ENUM.DELETED.getValue());
     }
 
     private void killSnake(int playerId) {

@@ -11,12 +11,9 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GamePlayer;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.*;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.mapper.ProtobufMapper;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.ID_ENUM;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.Snake;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.State;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.GameControlService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.MasterService;
 
@@ -48,7 +45,7 @@ public class UnicastService {
     private final MasterService masterService;
     private final ProtobufMapper protobufMapper;
 
-    private final Map<Integer, LocalTime> pingTable= Collections.synchronizedMap(new HashMap<>());
+    private final Map<Integer, LocalTime> pingTable = Collections.synchronizedMap(new HashMap<>());
 
     @PostConstruct
     public void initSocket() throws SocketException {
@@ -137,6 +134,14 @@ public class UnicastService {
                                     packet.getAddress().getHostAddress(), packet.getPort(), gameMessage.getMsgSeq());
 
                     sendMessage(gameMessageNew, packet.getAddress(), packet.getPort(), true);
+
+                    if (!gameMessage.hasError()) {
+                        GamePlayer gamePlayer = masterService.findNewDeputy();
+                        if (gamePlayer != null) {
+                            sendMessage(masterService.generateRoleChangeMessageNewDeputy(),
+                                    InetAddress.getByName(gamePlayer.getAddress()), gamePlayer.getPort(), true);
+                        }
+                    }
                 }
 
                 case ACK -> {
@@ -161,8 +166,40 @@ public class UnicastService {
                 }
 
                 case ROLE_CHANGE -> {
-                    deletePlayerById(gameMessage.getSenderId());
-                    makeSnakeZombie(gameMessage.getSenderId());
+                    //если мастеру пришло уведомление о том, что хочет выйти их игры
+                    if (gameInfo.getNodeRole()!=null && gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
+                        deletePlayerById(gameMessage.getSenderId());
+                        makeSnakeZombie(gameMessage.getSenderId());
+                        log.info(gameMessage.getSenderId() + "exit from game");
+                        GamePlayer gamePlayer = masterService.findNewDeputy();
+                        if (gamePlayer != null) {
+                            sendMessage(masterService.generateRoleChangeMessageNewDeputy(),
+                                    InetAddress.getByName(gamePlayer.getAddress()), gamePlayer.getPort(), true);
+                        }
+
+                        // если пришло соообщение, что получатель теперь мастер
+                    } else if (gameMessage.getRoleChange().getReceiverRole().equals(SnakesProto.NodeRole.MASTER)) {
+                        gameInfo.setNodeRole(SnakesProto.NodeRole.MASTER);
+                        for (GamePlayer gamePlayer : gameInfo.getGamePlayers()) {
+                            if (gamePlayer.getId() != gameInfo.getPlayerId()) {
+                                sendMessage(masterService.generateRoleChangeMessageAboutNewMaster(),
+                                        InetAddress.getByName(gamePlayer.getAddress()), gamePlayer.getPort(), true);
+                            }
+                        }
+
+                        log.info("You are master now");
+                        // если пришло сообщение от нового мастера
+                    } else if (gameMessage.getRoleChange().getSenderRole().equals(SnakesProto.NodeRole.MASTER)
+                            && !gameMessage.getRoleChange().hasReceiverRole()) {
+                        gameInfo.setMasterPort(packet.getPort());
+                        gameInfo.setMasterInetAddress(packet.getAddress().getHostAddress());
+                        log.info("New master");
+
+                        // если пришло сообщение о смене на deputy
+                    } else {
+                        gameInfo.setNodeRole(SnakesProto.NodeRole.DEPUTY);
+                        log.info("You are now deputy");
+                    }
                 }
 
                 case PING -> {
@@ -295,14 +332,16 @@ public class UnicastService {
     @Async
     @Scheduled(fixedDelayString = "${ping.delay.ms}")
     public void sendPingMessage() throws UnknownHostException {
-        SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage
-                .newBuilder()
-                .setMsgSeq(gameInfo.getIncrementMsgSeq())
-                .setPing(SnakesProto.GameMessage.PingMsg.newBuilder().build())
-                .build();
+        if (gameInfo.getGameConfig() != null && !gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
+            SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage
+                    .newBuilder()
+                    .setMsgSeq(gameInfo.getIncrementMsgSeq())
+                    .setPing(SnakesProto.GameMessage.PingMsg.newBuilder().build())
+                    .build();
 
-        sendMessage(gameMessage, InetAddress.getByName(gameInfo.getMasterInetAddress()),
-                gameInfo.getMasterPort(), true);
+            sendMessage(gameMessage, InetAddress.getByName(gameInfo.getMasterInetAddress()),
+                    gameInfo.getMasterPort(), true);
+        }
     }
 
     /**
@@ -321,7 +360,7 @@ public class UnicastService {
      * @param playerId индификатор хозяина змейки
      */
     private void makeSnakeZombie(int playerId) {
-        for (Snake snake: gameInfo.getSnakes()) {
+        for (Snake snake : gameInfo.getSnakes()) {
             if (snake.getPlayerId() == playerId) {
                 snake.setState(State.Zombie);
             }
@@ -334,7 +373,9 @@ public class UnicastService {
      * @param playerId индификатор игрока
      */
     public void updatePingTable(int playerId) {
-        pingTable.put(playerId, LocalTime.now());
+        synchronized (pingTable) {
+            pingTable.put(playerId, LocalTime.now());
+        }
     }
 
     /**
@@ -343,14 +384,20 @@ public class UnicastService {
     @Async
     @Scheduled(fixedDelayString = "${state.delay.ms}")
     public void deleteNotActivePlayers() {
-        pingTable.forEach((key, value) -> {
-            LocalTime currentTime = LocalTime.now();
-            LocalTime fiveSecondsAgo = currentTime.minusSeconds(1);
+        if (gameInfo.getGameConfig() != null && gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
+            synchronized (pingTable) {
+                pingTable.forEach((key, value) -> {
+                    LocalTime currentTime = LocalTime.now();
+                    LocalTime fiveSecondsAgo = currentTime.minusSeconds(1);
 
-            if (value.isBefore(fiveSecondsAgo)) {
-                pingTable.remove(key);
-                deletePlayerById(key);
+                    if (value.isBefore(fiveSecondsAgo)) {
+                        log.info(key + " deleted from game");
+                        pingTable.remove(key);
+                        deletePlayerById(key);
+                        makeSnakeZombie(key);
+                    }
+                });
             }
-        });
+        }
     }
 }

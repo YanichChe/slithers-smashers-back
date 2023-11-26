@@ -9,13 +9,16 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.*;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GameAnnouncement;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GamesInfo;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GamePlayer;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.ID_ENUM;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.Role;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.MasterService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.net.UnicastService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.player.PlayerService;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/player")
@@ -103,6 +106,8 @@ public class PlayerController {
         if (gameInfo.getPlayerId() == ID_ENUM.NOT_JOIN.getValue()) return ResponseEntity.ok("not enough place");
 
         playerService.setGameData(gameAnnouncement);
+        log.info("You are in game");
+        log.info(gameInfo.getGameConfig());
         return ResponseEntity.ok("join");
     }
 
@@ -114,8 +119,43 @@ public class PlayerController {
      */
     @PostMapping("/exit")
     public ResponseEntity<String> exit() throws UnknownHostException {
-        sender.sendMessage(playerService.generateRoleChangeMessageExit(),
-                InetAddress.getByName(gameInfo.getMasterInetAddress()), gameInfo.getMasterPort(), true);
+        if (gameInfo.getNodeRole().equals(SnakesProto.NodeRole.MASTER)) {
+
+            gameInfo.setNodeRole(SnakesProto.NodeRole.VIEWER);
+
+            int deputyId = -1;
+
+            List<GamePlayer> gamePlayerList = gameInfo.getGamePlayers();
+            GamePlayer deputy = null;
+            for (int i = 0; i < gameInfo.getGamePlayers().size(); i++) {
+                if (gamePlayerList.get(i).getRole().equals(Role.DEPUTY)) {
+                    deputyId = gamePlayerList.get(i).getId();
+                    deputy = gamePlayerList.get(i);
+                    break;
+                }
+            }
+
+            SnakesProto.GameMessage.RoleChangeMsg roleChangeMsg = SnakesProto.GameMessage.RoleChangeMsg
+                    .newBuilder()
+                    .setSenderRole(SnakesProto.NodeRole.VIEWER)
+                    .setReceiverRole(SnakesProto.NodeRole.MASTER)
+                    .build();
+            SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage
+                    .newBuilder()
+                    .setRoleChange(roleChangeMsg)
+                    .setSenderId(deputyId)
+                    .setReceiverId(gameInfo.getPlayerId())
+                    .setMsgSeq(gameInfo.getIncrementMsgSeq())
+                    .build();
+
+            if (deputyId != -1)
+                sender.sendMessage(gameMessage,
+                    InetAddress.getByName(deputy.getAddress()), deputy.getPort(), true);
+        } else {
+            sender.sendMessage(playerService.generateRoleChangeMessageExit(),
+                    InetAddress.getByName(gameInfo.getMasterInetAddress()), gameInfo.getMasterPort(), true);
+        }
+
         playerService.clearGameInfoData();
         return ResponseEntity.ok("exit");
     }

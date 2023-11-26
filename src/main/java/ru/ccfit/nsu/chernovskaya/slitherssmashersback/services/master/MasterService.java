@@ -3,10 +3,7 @@ package ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.SnakesProto;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.Coord;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.Direction;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GamePlayer;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.Snake;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.*;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.mapper.ProtobufMapper;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 
@@ -101,5 +98,52 @@ public class MasterService {
                 break;
             }
         }
+    }
+
+    public GamePlayer findNewDeputy() {
+        boolean hasDeputy = false;
+        for (GamePlayer gamePlayer: gameInfo.getGamePlayers()) {
+            if (gamePlayer.getRole().equals(Role.DEPUTY)) {
+                hasDeputy = true;
+                break;
+            }
+        }
+
+        if (hasDeputy) return null;
+
+        for(GamePlayer gamePlayer_: gameInfo.getGamePlayers()) {
+            if (!gamePlayer_.getRole().equals(Role.MASTER)) {
+                gamePlayer_.setRole(Role.DEPUTY);
+                return gamePlayer_;
+            }
+        }
+        return null;
+    }
+
+    public SnakesProto.GameMessage generateRoleChangeMessageAboutNewMaster() {
+        SnakesProto.GameMessage.RoleChangeMsg roleChangeMsg = SnakesProto.GameMessage.RoleChangeMsg
+                .newBuilder()
+                .setSenderRole(SnakesProto.NodeRole.MASTER)
+                .build();
+
+        return SnakesProto.GameMessage
+                .newBuilder()
+                .setMsgSeq(gameInfo.getIncrementMsgSeq())
+                .setRoleChange(roleChangeMsg)
+                .build();
+    }
+
+    public SnakesProto.GameMessage generateRoleChangeMessageNewDeputy() {
+        SnakesProto.GameMessage.RoleChangeMsg roleChangeMsg = SnakesProto.GameMessage.RoleChangeMsg
+                .newBuilder()
+                .setSenderRole(SnakesProto.NodeRole.MASTER)
+                .setReceiverRole(SnakesProto.NodeRole.DEPUTY)
+                .build();
+
+        return SnakesProto.GameMessage
+                .newBuilder()
+                .setMsgSeq(gameInfo.getIncrementMsgSeq())
+                .setRoleChange(roleChangeMsg)
+                .build();
     }
 }
