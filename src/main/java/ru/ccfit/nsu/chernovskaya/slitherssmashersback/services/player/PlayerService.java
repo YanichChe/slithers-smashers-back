@@ -101,4 +101,34 @@ public class PlayerService {
 
         return gamePlayersTable;
     }
+
+    public SnakesProto.GameMessage generateRoleChangeMessageExit() {
+        SnakesProto.GameMessage.RoleChangeMsg roleChangeMsg = SnakesProto.GameMessage.RoleChangeMsg
+                .newBuilder()
+                .setSenderRole(SnakesProto.NodeRole.VIEWER)
+                .build();
+       return SnakesProto.GameMessage
+               .newBuilder()
+               .setRoleChange(roleChangeMsg)
+               .setSenderId(gameInfo.getPlayerId())
+               .setMsgSeq(gameInfo.getIncrementMsgSeq())
+               .build();
+    }
+
+    public void clearGameInfoData() {
+        gameInfo.setGameConfig(null);
+        gameInfo.setCanJoin(true);
+        gameInfo.setGameName(null);
+        gameInfo.getSnakes().clear();
+        gameInfo.getGamePlayers().clear();;
+        gameInfo.setHeight(0);
+        gameInfo.setWidth(0);
+        gameInfo.setMasterInetAddress("");
+        gameInfo.setMasterPort(0);
+        gameInfo.setPlayerId(ID_ENUM.UNDEFINED.getValue());
+        gameInfo.setScore(0);
+        gameInfo.setAlive(true);
+        gameInfo.setStateOrder(0);
+        gameInfo.setMsqSeq(-1);
+    }
 }

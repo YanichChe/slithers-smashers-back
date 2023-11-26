@@ -39,6 +39,7 @@ public class GameControlService {
         gameInfo.setFoods(gameState.getFoods());
 
         int myIndex = findPlayerIndexById(gameInfo.getPlayerId());
+        log.info(myIndex+ " " + gameInfo.getScore());
         gameInfo.setScore(gameInfo.getGamePlayers().get(myIndex).getScore());
     }
 
@@ -126,13 +127,16 @@ public class GameControlService {
                 if (snake.getCoordList().get(0).getY() * gameInfo.getWidth() +
                         snake.getCoordList().get(0).getX() == x) {
 
-                    GamePlayer gamePlayer = gameInfo.getGamePlayers().get(indexGamePlayer);
-                    gamePlayer.setScore(gamePlayer.getScore() + 1);
+                    if (indexGamePlayer != -1) {
+                        GamePlayer gamePlayer = gameInfo.getGamePlayers().get(indexGamePlayer);
+                        gamePlayer.setScore(gamePlayer.getScore() + 1);
+                        isIncrease.add(gamePlayer.getId());
+                    }
 
                     int index = findFoodIndexByInt(x);
                     gameInfo.getFoods().remove(index);
 
-                    isIncrease.add(gamePlayer.getId());
+                    if (snake.getPlayerId() == gameInfo.getPlayerId()) gameInfo.setScore(gameInfo.getScore() + 1);
                     break;
                 }
             }
@@ -169,7 +173,7 @@ public class GameControlService {
                             int gamePlayerId_ = gameInfo.getSnakes().get(j).getPlayerId();
 
                             if (k != 0) {
-                                addPointToGamePlayer(gamePlayerId_);
+                                addPointToGamePlayer(findPlayerIndexById(gamePlayerId_));
                             } else {
                                 killedSnakesPlayersId.add(gamePlayerId_);
                             }
@@ -213,7 +217,7 @@ public class GameControlService {
         return total;
     }
 
-    private int findPlayerIndexById(long id) {
+    public int findPlayerIndexById(long id) {
         for (int i = 0; i < gameInfo.getGamePlayers().size(); i++) {
             if (gameInfo.getGamePlayers().get(i).getId() == id) {
                 return i;
@@ -222,7 +226,7 @@ public class GameControlService {
         return -1;
     }
 
-    private int findSnakeIndexByPlayerId(long id) {
+    public int findSnakeIndexByPlayerId(long id) {
         for (int i = 0; i < gameInfo.getSnakes().size(); i++) {
             if (gameInfo.getSnakes().get(i).getPlayerId() == id) {
                 return i;
@@ -231,7 +235,7 @@ public class GameControlService {
         return -1;
     }
 
-    private int findFoodIndexByInt(int coord) {
+    public int findFoodIndexByInt(int coord) {
         for (int i = 0; i < gameInfo.getFoods().size(); i++) {
             Coord food = gameInfo.getFoods().get(i);
             if (food.getY() * gameInfo.getWidth() + food.getX() == coord) {
@@ -245,7 +249,9 @@ public class GameControlService {
      * @param index индекс игрока
      */
     private void addPointToGamePlayer(int index) {
-        gameInfo.getGamePlayers().get(index).setScore(gameInfo.getGamePlayers().get(index).getScore() + 1);
+        if (index != -1) {
+            gameInfo.getGamePlayers().get(index).setScore(gameInfo.getGamePlayers().get(index).getScore() + 1);
+        }
     }
 
     private void killGamePlayer(int index) {

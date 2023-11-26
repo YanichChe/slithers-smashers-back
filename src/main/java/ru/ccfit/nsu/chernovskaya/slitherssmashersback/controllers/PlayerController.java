@@ -9,7 +9,6 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.controllers.messages.*;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GameAnnouncement;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GamesInfo;
-import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GamePlayer;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.ID_ENUM;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.MasterService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.net.UnicastService;
@@ -17,8 +16,6 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.player.PlayerServ
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
 
 @RestController
 @RequestMapping("/player")
@@ -107,5 +104,19 @@ public class PlayerController {
 
         playerService.setGameData(gameAnnouncement);
         return ResponseEntity.ok("join");
+    }
+
+    /**
+     * Отправка сообщения мастеру о том, что хочешь выйти из игры
+     *
+     * @return сообщение о выходе из игры
+     * @throws UnknownHostException
+     */
+    @PostMapping("/exit")
+    public ResponseEntity<String> exit() throws UnknownHostException {
+        sender.sendMessage(playerService.generateRoleChangeMessageExit(),
+                InetAddress.getByName(gameInfo.getMasterInetAddress()), gameInfo.getMasterPort(), true);
+        playerService.clearGameInfoData();
+        return ResponseEntity.ok("exit");
     }
 }
