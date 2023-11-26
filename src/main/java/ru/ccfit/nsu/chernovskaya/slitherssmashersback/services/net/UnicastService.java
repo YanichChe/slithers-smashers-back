@@ -15,15 +15,15 @@ import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.GamePlayer;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.mapper.ProtobufMapper;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.GameInfo;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.ID_ENUM;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.Snake;
+import ru.ccfit.nsu.chernovskaya.slitherssmashersback.models.game.State;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.GameControlService;
 import ru.ccfit.nsu.chernovskaya.slitherssmashersback.services.master.MasterService;
 
 import java.io.IOException;
 import java.net.*;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.time.LocalTime;
+import java.util.*;
 
 @Service
 @Log4j2
@@ -47,6 +47,8 @@ public class UnicastService {
     private final GameControlService gameControlService;
     private final MasterService masterService;
     private final ProtobufMapper protobufMapper;
+
+    private final Map<Integer, LocalTime> pingTable= Collections.synchronizedMap(new HashMap<>());
 
     @PostConstruct
     public void initSocket() throws SocketException {
@@ -156,6 +158,15 @@ public class UnicastService {
                     masterService.changeSnakeDirection(gameMessage.getSenderId(),
                             gameMessage.getSteer().getDirection());
                     sendAckMessage(gameMessage.getMsgSeq(), packet.getAddress(), packet.getPort());
+                }
+
+                case ROLE_CHANGE -> {
+                    deletePlayerById(gameMessage.getSenderId());
+                    makeSnakeZombie(gameMessage.getSenderId());
+                }
+
+                case PING -> {
+                    updatePingTable(gameMessage.getSenderId());
                 }
                 case TYPE_NOT_SET -> log.error("wrong type message");
             }
@@ -274,5 +285,72 @@ public class UnicastService {
                 .setMsgSeq(gameInfo.getIncrementMsgSeq())
                 .setAnnouncement(announcementMsg)
                 .build();
+    }
+
+    /**
+     * Отправляет ping сообщение
+     *
+     * @throws UnknownHostException
+     */
+    @Async
+    @Scheduled(fixedDelayString = "${ping.delay.ms}")
+    public void sendPingMessage() throws UnknownHostException {
+        SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage
+                .newBuilder()
+                .setMsgSeq(gameInfo.getIncrementMsgSeq())
+                .setPing(SnakesProto.GameMessage.PingMsg.newBuilder().build())
+                .build();
+
+        sendMessage(gameMessage, InetAddress.getByName(gameInfo.getMasterInetAddress()),
+                gameInfo.getMasterPort(), true);
+    }
+
+    /**
+     * Удаление игрока по id.
+     *
+     * @param id индификатор игрока, которого хотят удалить.
+     */
+    private void deletePlayerById(int id) {
+        gameInfo.getGamePlayers().removeIf(gamePlayer -> gamePlayer.getId() == id);
+    }
+
+
+    /**
+     * Устанавливает статус змейки - Зомби
+     *
+     * @param playerId индификатор хозяина змейки
+     */
+    private void makeSnakeZombie(int playerId) {
+        for (Snake snake: gameInfo.getSnakes()) {
+            if (snake.getPlayerId() == playerId) {
+                snake.setState(State.Zombie);
+            }
+        }
+    }
+
+    /**
+     * Обновляет время игрока.
+     *
+     * @param playerId индификатор игрока
+     */
+    public void updatePingTable(int playerId) {
+        pingTable.put(playerId, LocalTime.now());
+    }
+
+    /**
+     * Задание по удалению неактивных игроков.
+     */
+    @Async
+    @Scheduled(fixedDelayString = "${state.delay.ms}")
+    public void deleteNotActivePlayers() {
+        pingTable.forEach((key, value) -> {
+            LocalTime currentTime = LocalTime.now();
+            LocalTime fiveSecondsAgo = currentTime.minusSeconds(1);
+
+            if (value.isBefore(fiveSecondsAgo)) {
+                pingTable.remove(key);
+                deletePlayerById(key);
+            }
+        });
     }
 }
